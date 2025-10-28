@@ -1,10 +1,12 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Search, Send, Paperclip, Smile } from 'lucide-react';
+import { Search, Send, Paperclip, Smile, Bot } from 'lucide-react';
+import { useAIChat } from '@/hooks/useAIChat';
+import { toast } from '@/hooks/use-toast';
 
 const mockConversations = [
   {
@@ -36,30 +38,99 @@ const mockConversations = [
   },
 ];
 
-const mockMessages = [
+type Message = {
+  id: number;
+  sender: 'cliente' | 'ia' | 'agente';
+  content: string;
+  time: string;
+};
+
+const initialMessages: Message[] = [
   {
     id: 1,
     sender: 'cliente',
     content: 'Oi, gostaria de saber mais sobre os produtos',
     time: '10:28',
   },
-  {
-    id: 2,
-    sender: 'ia',
-    content: 'Olá! Claro, posso te ajudar com isso. Temos diversos produtos disponíveis. Qual tipo de produto você está procurando?',
-    time: '10:29',
-  },
-  {
-    id: 3,
-    sender: 'cliente',
-    content: 'Estou interessado em produtos para minha empresa',
-    time: '10:30',
-  },
 ];
 
 export default function WhatsApp() {
   const [selectedConversation, setSelectedConversation] = useState(mockConversations[0]);
   const [message, setMessage] = useState('');
+  const [messages, setMessages] = useState<Message[]>(initialMessages);
+  const { streamChat, isLoading, setIsLoading } = useAIChat();
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  const handleSendMessage = async () => {
+    if (!message.trim() || isLoading) return;
+
+    const userMessage: Message = {
+      id: messages.length + 1,
+      sender: 'cliente',
+      content: message.trim(),
+      time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+    };
+
+    setMessages(prev => [...prev, userMessage]);
+    setMessage('');
+    setIsLoading(true);
+
+    let aiResponse = '';
+    const aiMessageId = messages.length + 2;
+
+    try {
+      await streamChat({
+        messages: [
+          ...messages.map(m => ({ 
+            role: m.sender === 'cliente' ? 'user' : 'assistant' as 'user' | 'assistant', 
+            content: m.content 
+          })),
+          { role: 'user', content: message.trim() }
+        ],
+        onDelta: (chunk) => {
+          aiResponse += chunk;
+          setMessages(prev => {
+            const lastMsg = prev[prev.length - 1];
+            if (lastMsg?.id === aiMessageId) {
+              return prev.map(m => 
+                m.id === aiMessageId 
+                  ? { ...m, content: aiResponse }
+                  : m
+              );
+            }
+            return [...prev, {
+              id: aiMessageId,
+              sender: 'ia' as const,
+              content: aiResponse,
+              time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+            }];
+          });
+        },
+        onDone: () => {
+          setIsLoading(false);
+        },
+        onError: (error) => {
+          setIsLoading(false);
+          toast({
+            title: "Erro ao enviar mensagem",
+            description: error,
+            variant: "destructive",
+          });
+        }
+      });
+    } catch (error) {
+      setIsLoading(false);
+      console.error('Error sending message:', error);
+    }
+  };
 
   return (
     <div className="flex h-[calc(100vh-64px)]">
@@ -149,7 +220,7 @@ export default function WhatsApp() {
 
         {/* Messages */}
         <div className="flex-1 overflow-y-auto p-6 space-y-4">
-          {mockMessages.map((msg) => (
+          {messages.map((msg) => (
             <div
               key={msg.id}
               className={`flex ${msg.sender === 'cliente' ? 'justify-start' : 'justify-end'}`}
@@ -163,6 +234,12 @@ export default function WhatsApp() {
                     : 'bg-secondary text-secondary-foreground'
                 }`}
               >
+                {msg.sender === 'ia' && (
+                  <div className="flex items-center gap-2 mb-1">
+                    <Bot className="w-4 h-4" />
+                    <span className="text-xs font-semibold">Assistente IA</span>
+                  </div>
+                )}
                 <p className="text-sm">{msg.content}</p>
                 <p className={`text-xs mt-1 ${
                   msg.sender === 'cliente' ? 'text-muted-foreground' : 'text-white/70'
@@ -172,6 +249,7 @@ export default function WhatsApp() {
               </div>
             </div>
           ))}
+          <div ref={messagesEndRef} />
         </div>
 
         {/* Input Area */}
@@ -188,9 +266,15 @@ export default function WhatsApp() {
               placeholder="Digite sua mensagem..."
               value={message}
               onChange={(e) => setMessage(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+              disabled={isLoading}
               className="flex-1"
             />
-            <Button className="bg-gradient-to-r from-primary to-accent hover:opacity-90">
+            <Button 
+              onClick={handleSendMessage}
+              disabled={isLoading || !message.trim()}
+              className="bg-gradient-to-r from-primary to-accent hover:opacity-90"
+            >
               <Send className="w-4 h-4" />
             </Button>
           </div>
