@@ -11,6 +11,8 @@ import Agendamentos from "./pages/Agendamentos";
 import Financeiro from "./pages/Financeiro";
 import Agentes from "./pages/Agentes";
 import Configuracoes from "./pages/Configuracoes";
+import Produtos from "./pages/Produtos";
+import Relatorios from "./pages/Relatorios";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -27,7 +29,9 @@ const App = () => (
           <Route path="/whatsapp" element={<Layout><WhatsApp /></Layout>} />
           <Route path="/agendamentos" element={<Layout><Agendamentos /></Layout>} />
           <Route path="/financeiro" element={<Layout><Financeiro /></Layout>} />
+          <Route path="/produtos" element={<Layout><Produtos /></Layout>} />
           <Route path="/agentes" element={<Layout><Agentes /></Layout>} />
+          <Route path="/relatorios" element={<Layout><Relatorios /></Layout>} />
           <Route path="/configuracoes" element={<Layout><Configuracoes /></Layout>} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
