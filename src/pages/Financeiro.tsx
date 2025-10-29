@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -10,6 +11,7 @@ import {
   ArrowDownRight,
   Plus 
 } from 'lucide-react';
+import { TransactionDialog } from '@/components/dialogs/TransactionDialog';
 
 const mockEntradas = [
   {
@@ -50,9 +52,38 @@ const mockSaidas = [
 ];
 
 export default function Financeiro() {
-  const totalEntradas = mockEntradas.reduce((sum, e) => sum + e.value, 0);
-  const totalSaidas = mockSaidas.reduce((sum, s) => sum + s.value, 0);
+  const [entradas, setEntradas] = useState(mockEntradas);
+  const [saidas, setSaidas] = useState(mockSaidas);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [dialogType, setDialogType] = useState<'entrada' | 'saida'>('entrada');
+  const [selectedTransaction, setSelectedTransaction] = useState<any>(null);
+
+  const totalEntradas = entradas.reduce((sum, e) => sum + e.value, 0);
+  const totalSaidas = saidas.reduce((sum, s) => sum + s.value, 0);
   const saldo = totalEntradas - totalSaidas;
+
+  const handleSaveTransaction = (transaction: any) => {
+    if (dialogType === 'entrada') {
+      if (selectedTransaction) {
+        setEntradas(entradas.map(e => e.id === transaction.id ? transaction : e));
+      } else {
+        setEntradas([...entradas, transaction]);
+      }
+    } else {
+      if (selectedTransaction) {
+        setSaidas(saidas.map(s => s.id === transaction.id ? transaction : s));
+      } else {
+        setSaidas([...saidas, transaction]);
+      }
+    }
+    setSelectedTransaction(null);
+  };
+
+  const openDialog = (type: 'entrada' | 'saida') => {
+    setDialogType(type);
+    setSelectedTransaction(null);
+    setDialogOpen(true);
+  };
 
   return (
     <div className="p-8 space-y-6">
@@ -63,11 +94,14 @@ export default function Financeiro() {
           <p className="text-muted-foreground mt-1">Gerencie receitas e despesas</p>
         </div>
         <div className="flex space-x-2">
-          <Button variant="outline">
+          <Button variant="outline" onClick={() => openDialog('saida')}>
             <ArrowDownRight className="w-4 h-4 mr-2" />
             Nova Despesa
           </Button>
-          <Button className="bg-gradient-to-r from-primary to-accent hover:opacity-90">
+          <Button 
+            className="bg-gradient-to-r from-primary to-accent hover:opacity-90"
+            onClick={() => openDialog('entrada')}
+          >
             <ArrowUpRight className="w-4 h-4 mr-2" />
             Nova Receita
           </Button>
@@ -122,7 +156,7 @@ export default function Financeiro() {
 
           <TabsContent value="entradas" className="mt-6">
             <div className="space-y-4">
-              {mockEntradas.map((entrada) => (
+              {entradas.map((entrada) => (
                 <Card key={entrada.id} className="p-4 hover:shadow-md transition-shadow">
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
@@ -148,7 +182,7 @@ export default function Financeiro() {
 
           <TabsContent value="saidas" className="mt-6">
             <div className="space-y-4">
-              {mockSaidas.map((saida) => (
+              {saidas.map((saida) => (
                 <Card key={saida.id} className="p-4 hover:shadow-md transition-shadow">
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
@@ -173,6 +207,14 @@ export default function Financeiro() {
           </TabsContent>
         </Tabs>
       </Card>
+
+      <TransactionDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        type={dialogType}
+        transaction={selectedTransaction}
+        onSave={handleSaveTransaction}
+      />
     </div>
   );
 }

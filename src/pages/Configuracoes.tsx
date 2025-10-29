@@ -19,6 +19,7 @@ import {
   Save
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { WhatsAppInstanceDialog } from '@/components/dialogs/WhatsAppInstanceDialog';
 
 const mockInstances = [
   { id: 1, name: 'Principal', phone: '+55 11 98765-4321', status: 'connected' },
@@ -31,6 +32,18 @@ export default function Configuracoes() {
   const [orgEmail, setOrgEmail] = useState('contato@tomikcrm.com');
   const [aiEnabled, setAiEnabled] = useState(true);
   const [notifications, setNotifications] = useState(true);
+  const [instances, setInstances] = useState(mockInstances);
+  const [instanceDialogOpen, setInstanceDialogOpen] = useState(false);
+  const [selectedInstance, setSelectedInstance] = useState<any>(null);
+
+  const handleSaveInstance = (instance: any) => {
+    if (selectedInstance) {
+      setInstances(instances.map(i => i.id === instance.id ? instance : i));
+    } else {
+      setInstances([...instances, instance]);
+    }
+    setSelectedInstance(null);
+  };
 
   const handleSave = () => {
     toast({
@@ -120,13 +133,16 @@ export default function Configuracoes() {
           <Card className="p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-bold text-foreground">Instâncias WhatsApp</h2>
-              <Button>
+              <Button onClick={() => {
+                setSelectedInstance(null);
+                setInstanceDialogOpen(true);
+              }}>
                 <Plus className="w-4 h-4 mr-2" />
                 Nova Instância
               </Button>
             </div>
             <div className="space-y-3">
-              {mockInstances.map((instance) => (
+              {instances.map((instance) => (
                 <div key={instance.id} className="flex items-center justify-between p-4 border rounded-lg">
                   <div className="flex-1">
                     <div className="flex items-center gap-3">
@@ -149,6 +165,12 @@ export default function Configuracoes() {
               ))}
             </div>
           </Card>
+          <WhatsAppInstanceDialog
+            open={instanceDialogOpen}
+            onOpenChange={setInstanceDialogOpen}
+            instance={selectedInstance}
+            onSave={handleSaveInstance}
+          />
         </TabsContent>
 
         {/* IA */}

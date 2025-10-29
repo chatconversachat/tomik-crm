@@ -1,7 +1,9 @@
+import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Bot, MessageSquare, TrendingUp, Clock, Plus } from 'lucide-react';
+import { AgentDialog } from '@/components/dialogs/AgentDialog';
 
 const mockAgents = [
   {
@@ -34,6 +36,24 @@ const mockAgents = [
 ];
 
 export default function Agentes() {
+  const [agents, setAgents] = useState(mockAgents);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [selectedAgent, setSelectedAgent] = useState<any>(null);
+
+  const handleSaveAgent = (agent: any) => {
+    if (selectedAgent) {
+      setAgents(agents.map(a => a.id === agent.id ? agent : a));
+    } else {
+      setAgents([...agents, agent]);
+    }
+    setSelectedAgent(null);
+  };
+
+  const handleEditAgent = (agent: any) => {
+    setSelectedAgent(agent);
+    setDialogOpen(true);
+  };
+
   return (
     <div className="p-8 space-y-6">
       {/* Header */}
@@ -42,7 +62,13 @@ export default function Agentes() {
           <h1 className="text-3xl font-bold text-foreground">Agentes IA</h1>
           <p className="text-muted-foreground mt-1">Configure e monitore seus agentes inteligentes</p>
         </div>
-        <Button className="bg-gradient-to-r from-primary to-accent hover:opacity-90">
+        <Button 
+          className="bg-gradient-to-r from-primary to-accent hover:opacity-90"
+          onClick={() => {
+            setSelectedAgent(null);
+            setDialogOpen(true);
+          }}
+        >
           <Plus className="w-4 h-4 mr-2" />
           Novo Agente
         </Button>
@@ -89,7 +115,7 @@ export default function Agentes() {
 
       {/* Agents List */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {mockAgents.map((agent) => (
+        {agents.map((agent) => (
           <Card key={agent.id} className="p-6 hover:shadow-lg transition-shadow">
             <div className="flex items-start justify-between mb-4">
               <div className="flex items-start space-x-4">
@@ -126,7 +152,13 @@ export default function Agentes() {
             </div>
 
             <div className="flex space-x-2 mt-6">
-              <Button variant="outline" className="flex-1">Configurar</Button>
+              <Button 
+                variant="outline" 
+                className="flex-1"
+                onClick={() => handleEditAgent(agent)}
+              >
+                Configurar
+              </Button>
               <Button variant="outline" className="flex-1">Ver Métricas</Button>
             </div>
           </Card>
@@ -147,6 +179,13 @@ export default function Agentes() {
           </div>
         </div>
       </Card>
+
+      <AgentDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        agent={selectedAgent}
+        onSave={handleSaveAgent}
+      />
     </div>
   );
 }

@@ -1,7 +1,9 @@
+import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Calendar, Clock, User, Plus } from 'lucide-react';
+import { AppointmentDialog } from '@/components/dialogs/AppointmentDialog';
 
 const mockAppointments = [
   {
@@ -41,6 +43,24 @@ const statusColors: Record<string, string> = {
 };
 
 export default function Agendamentos() {
+  const [appointments, setAppointments] = useState(mockAppointments);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [selectedAppointment, setSelectedAppointment] = useState<any>(null);
+
+  const handleSaveAppointment = (appointment: any) => {
+    if (selectedAppointment) {
+      setAppointments(appointments.map(a => a.id === appointment.id ? appointment : a));
+    } else {
+      setAppointments([...appointments, appointment]);
+    }
+    setSelectedAppointment(null);
+  };
+
+  const handleEditAppointment = (appointment: any) => {
+    setSelectedAppointment(appointment);
+    setDialogOpen(true);
+  };
+
   return (
     <div className="p-8 space-y-6">
       {/* Header */}
@@ -49,7 +69,13 @@ export default function Agendamentos() {
           <h1 className="text-3xl font-bold text-foreground">Agendamentos</h1>
           <p className="text-muted-foreground mt-1">Gerencie sua agenda</p>
         </div>
-        <Button className="bg-gradient-to-r from-primary to-accent hover:opacity-90">
+        <Button 
+          className="bg-gradient-to-r from-primary to-accent hover:opacity-90"
+          onClick={() => {
+            setSelectedAppointment(null);
+            setDialogOpen(true);
+          }}
+        >
           <Plus className="w-4 h-4 mr-2" />
           Novo Agendamento
         </Button>
@@ -103,7 +129,7 @@ export default function Agendamentos() {
         <Card className="lg:col-span-2 p-6">
           <h2 className="text-lg font-semibold text-foreground mb-4">Próximos Agendamentos</h2>
           <div className="space-y-4">
-            {mockAppointments.map((appointment) => (
+            {appointments.map((appointment) => (
               <Card key={appointment.id} className="p-4 hover:shadow-md transition-shadow">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
@@ -130,8 +156,13 @@ export default function Agendamentos() {
                     </div>
                   </div>
                   <div className="flex space-x-2">
-                    <Button size="sm" variant="outline">Ver</Button>
-                    <Button size="sm" variant="outline">Editar</Button>
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      onClick={() => handleEditAppointment(appointment)}
+                    >
+                      Editar
+                    </Button>
                   </div>
                 </div>
               </Card>
@@ -139,6 +170,13 @@ export default function Agendamentos() {
           </div>
         </Card>
       </div>
+
+      <AppointmentDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        appointment={selectedAppointment}
+        onSave={handleSaveAppointment}
+      />
     </div>
   );
 }

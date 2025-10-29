@@ -13,6 +13,7 @@ import {
   Trash2,
   BarChart3
 } from 'lucide-react';
+import { ProductDialog } from '@/components/dialogs/ProductDialog';
 
 const mockProdutos = [
   {
@@ -55,8 +56,29 @@ const mockProdutos = [
 
 export default function Produtos() {
   const [searchTerm, setSearchTerm] = useState('');
+  const [produtos, setProdutos] = useState(mockProdutos);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<any>(null);
 
-  const filteredProdutos = mockProdutos.filter(produto =>
+  const handleSaveProduct = (product: any) => {
+    if (selectedProduct) {
+      setProdutos(produtos.map(p => p.id === product.id ? product : p));
+    } else {
+      setProdutos([...produtos, product]);
+    }
+    setSelectedProduct(null);
+  };
+
+  const handleEditProduct = (product: any) => {
+    setSelectedProduct(product);
+    setDialogOpen(true);
+  };
+
+  const handleDeleteProduct = (id: number) => {
+    setProdutos(produtos.filter(p => p.id !== id));
+  };
+
+  const filteredProdutos = produtos.filter(produto =>
     produto.nome.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -68,7 +90,13 @@ export default function Produtos() {
           <h1 className="text-3xl font-bold text-foreground">Produtos e Serviços</h1>
           <p className="text-muted-foreground mt-1">Gerencie seu catálogo de produtos</p>
         </div>
-        <Button className="bg-gradient-to-r from-primary to-accent hover:opacity-90">
+        <Button 
+          className="bg-gradient-to-r from-primary to-accent hover:opacity-90"
+          onClick={() => {
+            setSelectedProduct(null);
+            setDialogOpen(true);
+          }}
+        >
           <Plus className="w-4 h-4 mr-2" />
           Novo Produto
         </Button>
@@ -180,10 +208,18 @@ export default function Produtos() {
                   </td>
                   <td className="p-4">
                     <div className="flex items-center justify-end space-x-2">
-                      <Button variant="ghost" size="icon">
+                      <Button 
+                        variant="ghost" 
+                        size="icon"
+                        onClick={() => handleEditProduct(produto)}
+                      >
                         <Edit className="w-4 h-4" />
                       </Button>
-                      <Button variant="ghost" size="icon">
+                      <Button 
+                        variant="ghost" 
+                        size="icon"
+                        onClick={() => handleDeleteProduct(produto.id)}
+                      >
                         <Trash2 className="w-4 h-4 text-destructive" />
                       </Button>
                     </div>
@@ -194,6 +230,13 @@ export default function Produtos() {
           </table>
         </div>
       </Card>
+
+      <ProductDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        product={selectedProduct}
+        onSave={handleSaveProduct}
+      />
     </div>
   );
 }

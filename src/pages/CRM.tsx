@@ -3,7 +3,14 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Search, Plus, Mail, Phone, MoreVertical } from 'lucide-react';
+import { Search, Plus, Mail, Phone, MoreVertical, Pencil, Eye } from 'lucide-react';
+import { LeadDialog } from '@/components/dialogs/LeadDialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 const mockLeads = [
   {
@@ -44,6 +51,32 @@ const stageColors: Record<string, string> = {
 
 export default function CRM() {
   const [searchQuery, setSearchQuery] = useState('');
+  const [leads, setLeads] = useState(mockLeads);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [selectedLead, setSelectedLead] = useState<any>(null);
+
+  const handleSaveLead = (lead: any) => {
+    if (selectedLead) {
+      setLeads(leads.map(l => l.id === lead.id ? lead : l));
+    } else {
+      setLeads([...leads, lead]);
+    }
+    setSelectedLead(null);
+  };
+
+  const handleEditLead = (lead: any) => {
+    setSelectedLead(lead);
+    setDialogOpen(true);
+  };
+
+  const handleDeleteLead = (id: number) => {
+    setLeads(leads.filter(l => l.id !== id));
+  };
+
+  const filteredLeads = leads.filter(lead => 
+    lead.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    lead.email.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
     <div className="p-8 space-y-6">
@@ -53,7 +86,13 @@ export default function CRM() {
           <h1 className="text-3xl font-bold text-foreground">CRM</h1>
           <p className="text-muted-foreground mt-1">Gerencie seus leads e clientes</p>
         </div>
-        <Button className="bg-gradient-to-r from-primary to-accent hover:opacity-90">
+        <Button 
+          className="bg-gradient-to-r from-primary to-accent hover:opacity-90"
+          onClick={() => {
+            setSelectedLead(null);
+            setDialogOpen(true);
+          }}
+        >
           <Plus className="w-4 h-4 mr-2" />
           Novo Lead
         </Button>
@@ -106,7 +145,7 @@ export default function CRM() {
               </tr>
             </thead>
             <tbody className="divide-y">
-              {mockLeads.map((lead) => (
+              {filteredLeads.map((lead) => (
                 <tr key={lead.id} className="hover:bg-muted/30 transition-colors">
                   <td className="px-6 py-4">
                     <div className="font-medium text-foreground">{lead.name}</div>
@@ -135,9 +174,22 @@ export default function CRM() {
                     <div className="text-sm text-muted-foreground">{lead.source}</div>
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <Button variant="ghost" size="sm">
-                      <MoreVertical className="w-4 h-4" />
-                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm">
+                          <MoreVertical className="w-4 h-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="bg-background">
+                        <DropdownMenuItem onClick={() => handleEditLead(lead)}>
+                          <Pencil className="w-4 h-4 mr-2" />
+                          Editar
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleDeleteLead(lead.id)} className="text-destructive">
+                          Excluir
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </td>
                 </tr>
               ))}
@@ -145,6 +197,13 @@ export default function CRM() {
           </table>
         </div>
       </Card>
+
+      <LeadDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        lead={selectedLead}
+        onSave={handleSaveLead}
+      />
     </div>
   );
 }
