@@ -72,6 +72,25 @@ export default function WhatsApp() {
   const handleSendMessage = async () => {
     if (!message.trim() || isLoading) return;
 
+    // Validação de input
+    if (message.trim().length < 2) {
+      toast({
+        title: "Mensagem muito curta",
+        description: "Digite pelo menos 2 caracteres",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (message.trim().length > 1000) {
+      toast({
+        title: "Mensagem muito longa",
+        description: "Limite de 1000 caracteres",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const userMessage: Message = {
       id: messages.length + 1,
       sender: 'cliente',
@@ -87,9 +106,11 @@ export default function WhatsApp() {
     const aiMessageId = messages.length + 2;
 
     try {
+      const recentMessages = messages.slice(-10);
+      
       await streamChat({
         messages: [
-          ...messages.map(m => ({ 
+          ...recentMessages.map(m => ({ 
             role: m.sender === 'cliente' ? 'user' : 'assistant' as 'user' | 'assistant', 
             content: m.content 
           })),

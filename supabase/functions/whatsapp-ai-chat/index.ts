@@ -25,13 +25,13 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "google/gemini-2.5-flash-lite",
         messages: [
           { 
             role: "system", 
             content: "Você é um assistente de vendas inteligente para um sistema CRM. Responda de forma profissional, amigável e objetiva. Ajude os clientes com informações sobre produtos, agendamentos e qualificação de leads. Seja sempre cortês e eficiente."
           },
-          ...messages,
+          ...messages.slice(-10),
         ],
         stream: true,
       }),
