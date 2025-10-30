@@ -2,8 +2,13 @@ import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, Clock, User, Plus } from 'lucide-react';
+import { Calendar, Clock, User, Plus, Settings } from 'lucide-react';
 import { AppointmentDialog } from '@/components/dialogs/AppointmentDialog';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { useToast } from '@/hooks/use-toast';
 
 const mockAppointments = [
   {
@@ -43,9 +48,13 @@ const statusColors: Record<string, string> = {
 };
 
 export default function Agendamentos() {
+  const { toast } = useToast();
   const [appointments, setAppointments] = useState(mockAppointments);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState<any>(null);
+  const [configOpen, setConfigOpen] = useState(false);
+  const [calendarType, setCalendarType] = useState<'system' | 'google'>('system');
+  const [googleCalendarUrl, setGoogleCalendarUrl] = useState('');
 
   const handleSaveAppointment = (appointment: any) => {
     if (selectedAppointment) {
@@ -61,6 +70,22 @@ export default function Agendamentos() {
     setDialogOpen(true);
   };
 
+  const handleSaveCalendarConfig = () => {
+    if (calendarType === 'google' && !googleCalendarUrl) {
+      toast({
+        title: 'Erro',
+        description: 'Por favor, insira a URL do Google Calendar',
+        variant: 'destructive',
+      });
+      return;
+    }
+    toast({
+      title: 'Sucesso',
+      description: 'Configurações do calendário salvas com sucesso!',
+    });
+    setConfigOpen(false);
+  };
+
   return (
     <div className="p-8 space-y-6">
       {/* Header */}
@@ -69,17 +94,74 @@ export default function Agendamentos() {
           <h1 className="text-3xl font-bold text-foreground">Agendamentos</h1>
           <p className="text-muted-foreground mt-1">Gerencie sua agenda</p>
         </div>
-        <Button 
-          className="bg-gradient-to-r from-primary to-accent hover:opacity-90"
-          onClick={() => {
-            setSelectedAppointment(null);
-            setDialogOpen(true);
-          }}
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Novo Agendamento
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            variant="outline"
+            onClick={() => setConfigOpen(!configOpen)}
+          >
+            <Settings className="w-4 h-4 mr-2" />
+            Configurar Calendário
+          </Button>
+          <Button 
+            className="bg-gradient-to-r from-primary to-accent hover:opacity-90"
+            onClick={() => {
+              setSelectedAppointment(null);
+              setDialogOpen(true);
+            }}
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Novo Agendamento
+          </Button>
+        </div>
       </div>
+
+      {/* Calendar Configuration */}
+      <Collapsible open={configOpen} onOpenChange={setConfigOpen}>
+        <CollapsibleContent>
+          <Card className="p-6">
+            <h2 className="text-lg font-semibold text-foreground mb-4">Configurações do Calendário</h2>
+            <div className="space-y-4">
+              <div className="space-y-3">
+                <Label>Tipo de Calendário</Label>
+                <RadioGroup value={calendarType} onValueChange={(value: any) => setCalendarType(value)}>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="system" id="system" />
+                    <Label htmlFor="system" className="cursor-pointer font-normal">
+                      Calendário do Sistema
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="google" id="google" />
+                    <Label htmlFor="google" className="cursor-pointer font-normal">
+                      Google Calendar (Incorporado)
+                    </Label>
+                  </div>
+                </RadioGroup>
+              </div>
+
+              {calendarType === 'google' && (
+                <div className="space-y-2">
+                  <Label htmlFor="googleUrl">URL de Incorporação do Google Calendar</Label>
+                  <Input
+                    id="googleUrl"
+                    value={googleCalendarUrl}
+                    onChange={(e) => setGoogleCalendarUrl(e.target.value)}
+                    placeholder="https://calendar.google.com/calendar/embed?src=..."
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Para obter a URL: Abra seu Google Calendar → Configurações → Configurações do calendário → 
+                    Integrar calendário → Copie o código iframe e cole aqui a URL do src
+                  </p>
+                </div>
+              )}
+
+              <Button onClick={handleSaveCalendarConfig} className="w-full">
+                Salvar Configurações
+              </Button>
+            </div>
+          </Card>
+        </CollapsibleContent>
+      </Collapsible>
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -105,25 +187,35 @@ export default function Agendamentos() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <Card className="lg:col-span-1 p-6">
           <h2 className="text-lg font-semibold text-foreground mb-4">Calendário</h2>
-          <div className="space-y-4">
-            <div className="aspect-square bg-muted/30 rounded-lg flex items-center justify-center">
-              <Calendar className="w-16 h-16 text-muted-foreground" />
+          {calendarType === 'google' && googleCalendarUrl ? (
+            <div className="w-full">
+              <iframe
+                src={googleCalendarUrl}
+                className="w-full h-[500px] border-0 rounded-lg"
+                title="Google Calendar"
+              />
             </div>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Segunda</span>
-                <Badge className="bg-primary/10 text-primary">4</Badge>
+          ) : (
+            <div className="space-y-4">
+              <div className="aspect-square bg-muted/30 rounded-lg flex items-center justify-center">
+                <Calendar className="w-16 h-16 text-muted-foreground" />
               </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Terça</span>
-                <Badge className="bg-primary/10 text-primary">6</Badge>
-              </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Quarta</span>
-                <Badge className="bg-primary/10 text-primary">8</Badge>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Segunda</span>
+                  <Badge className="bg-primary/10 text-primary">4</Badge>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Terça</span>
+                  <Badge className="bg-primary/10 text-primary">6</Badge>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Quarta</span>
+                  <Badge className="bg-primary/10 text-primary">8</Badge>
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </Card>
 
         <Card className="lg:col-span-2 p-6">
