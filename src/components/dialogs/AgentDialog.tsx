@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 
 interface AgentDialogProps {
@@ -22,6 +23,10 @@ export function AgentDialog({ open, onOpenChange, agent, onSave }: AgentDialogPr
     status: 'Ativo',
     model: 'gemini-flash',
     prompt: '',
+    n8nWebhook: '',
+    audioEnabled: false,
+    imageEnabled: false,
+    fileEnabled: false,
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -91,7 +96,14 @@ export function AgentDialog({ open, onOpenChange, agent, onSave }: AgentDialogPr
                 <SelectContent>
                   <SelectItem value="gemini-flash">Gemini 2.5 Flash</SelectItem>
                   <SelectItem value="gemini-pro">Gemini 2.5 Pro</SelectItem>
+                  <SelectItem value="gemini-flash-lite">Gemini 2.5 Flash Lite</SelectItem>
                   <SelectItem value="gpt-5">GPT-5</SelectItem>
+                  <SelectItem value="gpt-5-mini">GPT-5 Mini</SelectItem>
+                  <SelectItem value="gpt-5-nano">GPT-5 Nano</SelectItem>
+                  <SelectItem value="claude-sonnet-4-5">Claude Sonnet 4.5</SelectItem>
+                  <SelectItem value="claude-opus-4">Claude Opus 4</SelectItem>
+                  <SelectItem value="llama-3-70b">Llama 3 70B</SelectItem>
+                  <SelectItem value="mistral-large">Mistral Large</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -108,6 +120,62 @@ export function AgentDialog({ open, onOpenChange, agent, onSave }: AgentDialogPr
                   <SelectItem value="Inativo">Inativo</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="n8nWebhook">Webhook n8n</Label>
+            <Input
+              id="n8nWebhook"
+              value={formData.n8nWebhook}
+              onChange={(e) => setFormData({ ...formData, n8nWebhook: e.target.value })}
+              placeholder="https://seu-n8n.com/webhook/..."
+            />
+            <p className="text-xs text-muted-foreground">
+              URL do webhook n8n para integração
+            </p>
+          </div>
+
+          <div className="space-y-4">
+            <Label>Capacidades do Agente</Label>
+            <div className="flex items-center justify-between space-x-2">
+              <Label htmlFor="audio" className="flex flex-col space-y-1 cursor-pointer">
+                <span>Escutar Áudio</span>
+                <span className="text-xs text-muted-foreground font-normal">
+                  Processar mensagens de áudio
+                </span>
+              </Label>
+              <Switch
+                id="audio"
+                checked={formData.audioEnabled}
+                onCheckedChange={(checked) => setFormData({ ...formData, audioEnabled: checked })}
+              />
+            </div>
+            <div className="flex items-center justify-between space-x-2">
+              <Label htmlFor="image" className="flex flex-col space-y-1 cursor-pointer">
+                <span>Ler Imagens</span>
+                <span className="text-xs text-muted-foreground font-normal">
+                  Analisar e descrever imagens
+                </span>
+              </Label>
+              <Switch
+                id="image"
+                checked={formData.imageEnabled}
+                onCheckedChange={(checked) => setFormData({ ...formData, imageEnabled: checked })}
+              />
+            </div>
+            <div className="flex items-center justify-between space-x-2">
+              <Label htmlFor="file" className="flex flex-col space-y-1 cursor-pointer">
+                <span>Ler Arquivos</span>
+                <span className="text-xs text-muted-foreground font-normal">
+                  Processar documentos e arquivos
+                </span>
+              </Label>
+              <Switch
+                id="file"
+                checked={formData.fileEnabled}
+                onCheckedChange={(checked) => setFormData({ ...formData, fileEnabled: checked })}
+              />
             </div>
           </div>
 
