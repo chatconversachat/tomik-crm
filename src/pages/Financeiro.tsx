@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -9,79 +9,75 @@ import {
   DollarSign, 
   ArrowUpRight, 
   ArrowDownRight,
-  Plus 
+  Plus,
+  FileText,
+  BarChart3
 } from 'lucide-react';
-import { TransactionDialog } from '@/components/dialogs/TransactionDialog';
-
-const mockEntradas = [
-  {
-    id: 1,
-    description: 'Pagamento - João Silva',
-    value: 1200,
-    date: '2025-10-25',
-    type: 'Consulta',
-    status: 'Confirmado',
-  },
-  {
-    id: 2,
-    description: 'Pagamento - Maria Santos',
-    value: 850,
-    date: '2025-10-24',
-    type: 'Produto',
-    status: 'Confirmado',
-  },
-];
-
-const mockSaidas = [
-  {
-    id: 1,
-    description: 'Fornecedor - Produtos',
-    value: 3500,
-    date: '2025-10-23',
-    category: 'Compras',
-    status: 'Pago',
-  },
-  {
-    id: 2,
-    description: 'Aluguel - Escritório',
-    value: 2000,
-    date: '2025-10-22',
-    category: 'Despesas Fixas',
-    status: 'Pago',
-  },
-];
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import { ContaDialog } from '@/components/dialogs/ContaDialog';
+import { RelatoriosFinanceiros } from '@/components/finance/RelatoriosFinanceiros';
+import { FluxoCaixa } from '@/components/finance/FluxoCaixa';
 
 export default function Financeiro() {
-  const [entradas, setEntradas] = useState(mockEntradas);
-  const [saidas, setSaidas] = useState(mockSaidas);
+  const [contasReceber, setContasReceber] = useState<any[]>([]);
+  const [contasPagar, setContasPagar] = useState<any[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [dialogType, setDialogType] = useState<'entrada' | 'saida'>('entrada');
-  const [selectedTransaction, setSelectedTransaction] = useState<any>(null);
+  const [dialogType, setDialogType] = useState<'receber' | 'pagar'>('receber');
+  const [selectedConta, setSelectedConta] = useState<any>(null);
+  const [activeTab, setActiveTab] = useState('contas');
+  const { toast } = useToast();
 
-  const totalEntradas = entradas.reduce((sum, e) => sum + e.value, 0);
-  const totalSaidas = saidas.reduce((sum, s) => sum + s.value, 0);
-  const saldo = totalEntradas - totalSaidas;
+  useEffect(() => {
+    loadContasReceber();
+    loadContasPagar();
+  }, []);
 
-  const handleSaveTransaction = (transaction: any) => {
-    if (dialogType === 'entrada') {
-      if (selectedTransaction) {
-        setEntradas(entradas.map(e => e.id === transaction.id ? transaction : e));
-      } else {
-        setEntradas([...entradas, transaction]);
-      }
+  const loadContasReceber = async () => {
+    const { data, error } = await supabase
+      .from('contas_receber')
+      .select('*')
+      .order('data_vencimento', { ascending: true });
+    
+    if (error) {
+      toast({ title: 'Erro', description: 'Erro ao carregar contas a receber', variant: 'destructive' });
     } else {
-      if (selectedTransaction) {
-        setSaidas(saidas.map(s => s.id === transaction.id ? transaction : s));
-      } else {
-        setSaidas([...saidas, transaction]);
-      }
+      setContasReceber(data || []);
     }
-    setSelectedTransaction(null);
   };
 
-  const openDialog = (type: 'entrada' | 'saida') => {
+  const loadContasPagar = async () => {
+    const { data, error } = await supabase
+      .from('contas_pagar')
+      .select('*')
+      .order('data_vencimento', { ascending: true });
+    
+    if (error) {
+      toast({ title: 'Erro', description: 'Erro ao carregar contas a pagar', variant: 'destructive' });
+    } else {
+      setContasPagar(data || []);
+    }
+  };
+
+  const totalReceber = contasReceber
+    .filter(c => c.status !== 'recebido')
+    .reduce((sum, c) => sum + parseFloat(c.valor || 0), 0);
+  
+  const totalPagar = contasPagar
+    .filter(c => c.status !== 'pago')
+    .reduce((sum, c) => sum + parseFloat(c.valor || 0), 0);
+  
+  const saldo = totalReceber - totalPagar;
+
+  const handleSaveConta = async () => {
+    await loadContasReceber();
+    await loadContasPagar();
+    setSelectedConta(null);
+  };
+
+  const openDialog = (type: 'receber' | 'pagar') => {
     setDialogType(type);
-    setSelectedTransaction(null);
+    setSelectedConta(null);
     setDialogOpen(true);
   };
 
@@ -94,13 +90,13 @@ export default function Financeiro() {
           <p className="text-muted-foreground mt-1">Gerencie receitas e despesas</p>
         </div>
         <div className="flex space-x-2">
-          <Button variant="outline" onClick={() => openDialog('saida')}>
+          <Button variant="outline" onClick={() => openDialog('pagar')}>
             <ArrowDownRight className="w-4 h-4 mr-2" />
             Nova Despesa
           </Button>
           <Button 
             className="bg-gradient-to-r from-primary to-accent hover:opacity-90"
-            onClick={() => openDialog('entrada')}
+            onClick={() => openDialog('receber')}
           >
             <ArrowUpRight className="w-4 h-4 mr-2" />
             Nova Receita
@@ -112,108 +108,148 @@ export default function Financeiro() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card className="p-6 bg-gradient-to-br from-success to-green-600 text-white">
           <div className="flex items-center justify-between mb-2">
-            <div className="text-sm font-medium text-white/80">Receitas</div>
+            <div className="text-sm font-medium text-white/80">A Receber</div>
             <TrendingUp className="w-5 h-5" />
           </div>
           <div className="text-3xl font-bold">
-            R$ {totalEntradas.toLocaleString('pt-BR')}
+            R$ {totalReceber.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
           </div>
-          <div className="text-sm text-white/80 mt-2">+12.5% vs mês anterior</div>
+          <div className="text-sm text-white/80 mt-2">{contasReceber.filter(c => c.status === 'pendente').length} pendentes</div>
         </Card>
 
         <Card className="p-6 bg-gradient-to-br from-destructive to-red-600 text-white">
           <div className="flex items-center justify-between mb-2">
-            <div className="text-sm font-medium text-white/80">Despesas</div>
+            <div className="text-sm font-medium text-white/80">A Pagar</div>
             <TrendingDown className="w-5 h-5" />
           </div>
           <div className="text-3xl font-bold">
-            R$ {totalSaidas.toLocaleString('pt-BR')}
+            R$ {totalPagar.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
           </div>
-          <div className="text-sm text-white/80 mt-2">+8.3% vs mês anterior</div>
+          <div className="text-sm text-white/80 mt-2">{contasPagar.filter(c => c.status === 'pendente').length} pendentes</div>
         </Card>
 
         <Card className="p-6 bg-gradient-to-br from-primary to-accent text-white">
           <div className="flex items-center justify-between mb-2">
-            <div className="text-sm font-medium text-white/80">Saldo</div>
+            <div className="text-sm font-medium text-white/80">Saldo Previsto</div>
             <DollarSign className="w-5 h-5" />
           </div>
           <div className="text-3xl font-bold">
-            R$ {saldo.toLocaleString('pt-BR')}
+            R$ {saldo.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
           </div>
           <div className="text-sm text-white/80 mt-2">
-            {saldo >= 0 ? 'Positivo' : 'Negativo'}
+            {saldo >= 0 ? 'Positivo' : 'Atenção'}
           </div>
         </Card>
       </div>
 
-      {/* Transactions */}
+      {/* Content Tabs */}
       <Card className="p-6">
-        <Tabs defaultValue="entradas" className="w-full">
-          <TabsList className="grid w-full max-w-md grid-cols-2">
-            <TabsTrigger value="entradas">Receitas</TabsTrigger>
-            <TabsTrigger value="saidas">Despesas</TabsTrigger>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full max-w-2xl grid-cols-3">
+            <TabsTrigger value="contas">Contas</TabsTrigger>
+            <TabsTrigger value="fluxo">Fluxo de Caixa</TabsTrigger>
+            <TabsTrigger value="relatorios">Relatórios</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="entradas" className="mt-6">
-            <div className="space-y-4">
-              {entradas.map((entrada) => (
-                <Card key={entrada.id} className="p-4 hover:shadow-md transition-shadow">
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-foreground">{entrada.description}</h3>
-                      <div className="flex items-center space-x-2 mt-1">
-                        <Badge variant="outline">{entrada.type}</Badge>
-                        <Badge className="bg-success/10 text-success">{entrada.status}</Badge>
-                        <span className="text-sm text-muted-foreground">
-                          {new Date(entrada.date).toLocaleDateString('pt-BR')}
-                        </span>
+          <TabsContent value="contas" className="mt-6">
+            <Tabs defaultValue="receber" className="w-full">
+              <TabsList className="grid w-full max-w-md grid-cols-2">
+                <TabsTrigger value="receber">A Receber</TabsTrigger>
+                <TabsTrigger value="pagar">A Pagar</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="receber" className="mt-6">
+                <div className="space-y-4">
+                  {contasReceber.map((conta) => (
+                    <Card key={conta.id} className="p-4 hover:shadow-md transition-shadow">
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <h3 className="font-semibold text-foreground">{conta.descricao}</h3>
+                          <div className="flex items-center space-x-2 mt-1">
+                            <Badge variant="outline">{conta.categoria}</Badge>
+                            <Badge className={
+                              conta.status === 'recebido' 
+                                ? 'bg-success/10 text-success' 
+                                : conta.status === 'vencido'
+                                ? 'bg-destructive/10 text-destructive'
+                                : 'bg-warning/10 text-warning'
+                            }>
+                              {conta.status}
+                            </Badge>
+                            <span className="text-sm text-muted-foreground">
+                              Venc: {new Date(conta.data_vencimento).toLocaleDateString('pt-BR')}
+                            </span>
+                          </div>
+                          {conta.cliente && (
+                            <p className="text-sm text-muted-foreground mt-1">Cliente: {conta.cliente}</p>
+                          )}
+                        </div>
+                        <div className="text-right">
+                          <div className="text-2xl font-bold text-success">
+                            R$ {parseFloat(conta.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-2xl font-bold text-success">
-                        +R$ {entrada.value.toLocaleString('pt-BR')}
+                    </Card>
+                  ))}
+                </div>
+              </TabsContent>
+
+              <TabsContent value="pagar" className="mt-6">
+                <div className="space-y-4">
+                  {contasPagar.map((conta) => (
+                    <Card key={conta.id} className="p-4 hover:shadow-md transition-shadow">
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <h3 className="font-semibold text-foreground">{conta.descricao}</h3>
+                          <div className="flex items-center space-x-2 mt-1">
+                            <Badge variant="outline">{conta.categoria}</Badge>
+                            <Badge className={
+                              conta.status === 'pago' 
+                                ? 'bg-success/10 text-success' 
+                                : conta.status === 'vencido'
+                                ? 'bg-destructive/10 text-destructive'
+                                : 'bg-warning/10 text-warning'
+                            }>
+                              {conta.status}
+                            </Badge>
+                            <span className="text-sm text-muted-foreground">
+                              Venc: {new Date(conta.data_vencimento).toLocaleDateString('pt-BR')}
+                            </span>
+                          </div>
+                          {conta.fornecedor && (
+                            <p className="text-sm text-muted-foreground mt-1">Fornecedor: {conta.fornecedor}</p>
+                          )}
+                        </div>
+                        <div className="text-right">
+                          <div className="text-2xl font-bold text-destructive">
+                            R$ {parseFloat(conta.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </div>
-                </Card>
-              ))}
-            </div>
+                    </Card>
+                  ))}
+                </div>
+              </TabsContent>
+            </Tabs>
           </TabsContent>
 
-          <TabsContent value="saidas" className="mt-6">
-            <div className="space-y-4">
-              {saidas.map((saida) => (
-                <Card key={saida.id} className="p-4 hover:shadow-md transition-shadow">
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-foreground">{saida.description}</h3>
-                      <div className="flex items-center space-x-2 mt-1">
-                        <Badge variant="outline">{saida.category}</Badge>
-                        <Badge className="bg-destructive/10 text-destructive">{saida.status}</Badge>
-                        <span className="text-sm text-muted-foreground">
-                          {new Date(saida.date).toLocaleDateString('pt-BR')}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-2xl font-bold text-destructive">
-                        -R$ {saida.value.toLocaleString('pt-BR')}
-                      </div>
-                    </div>
-                  </div>
-                </Card>
-              ))}
-            </div>
+          <TabsContent value="fluxo" className="mt-6">
+            <FluxoCaixa />
+          </TabsContent>
+
+          <TabsContent value="relatorios" className="mt-6">
+            <RelatoriosFinanceiros />
           </TabsContent>
         </Tabs>
       </Card>
 
-      <TransactionDialog
+      <ContaDialog
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         type={dialogType}
-        transaction={selectedTransaction}
-        onSave={handleSaveTransaction}
+        conta={selectedConta}
+        onSave={handleSaveConta}
       />
     </div>
   );

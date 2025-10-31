@@ -14,7 +14,261 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      config_fiscal: {
+        Row: {
+          cfop: string
+          created_at: string
+          cst: string | null
+          id: string
+          item_id: string
+          item_tipo: string
+          ncm: string | null
+          regras_fiscais_ids: string[] | null
+          updated_at: string
+        }
+        Insert: {
+          cfop: string
+          created_at?: string
+          cst?: string | null
+          id?: string
+          item_id: string
+          item_tipo: string
+          ncm?: string | null
+          regras_fiscais_ids?: string[] | null
+          updated_at?: string
+        }
+        Update: {
+          cfop?: string
+          created_at?: string
+          cst?: string | null
+          id?: string
+          item_id?: string
+          item_tipo?: string
+          ncm?: string | null
+          regras_fiscais_ids?: string[] | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      contas_pagar: {
+        Row: {
+          categoria: string
+          created_at: string
+          data_pagamento: string | null
+          data_vencimento: string
+          descricao: string
+          fornecedor: string | null
+          id: string
+          observacoes: string | null
+          status: string
+          updated_at: string
+          valor: number
+        }
+        Insert: {
+          categoria: string
+          created_at?: string
+          data_pagamento?: string | null
+          data_vencimento: string
+          descricao: string
+          fornecedor?: string | null
+          id?: string
+          observacoes?: string | null
+          status?: string
+          updated_at?: string
+          valor: number
+        }
+        Update: {
+          categoria?: string
+          created_at?: string
+          data_pagamento?: string | null
+          data_vencimento?: string
+          descricao?: string
+          fornecedor?: string | null
+          id?: string
+          observacoes?: string | null
+          status?: string
+          updated_at?: string
+          valor?: number
+        }
+        Relationships: []
+      }
+      contas_receber: {
+        Row: {
+          categoria: string
+          cliente: string | null
+          created_at: string
+          data_recebimento: string | null
+          data_vencimento: string
+          descricao: string
+          id: string
+          observacoes: string | null
+          status: string
+          updated_at: string
+          valor: number
+        }
+        Insert: {
+          categoria: string
+          cliente?: string | null
+          created_at?: string
+          data_recebimento?: string | null
+          data_vencimento: string
+          descricao: string
+          id?: string
+          observacoes?: string | null
+          status?: string
+          updated_at?: string
+          valor: number
+        }
+        Update: {
+          categoria?: string
+          cliente?: string | null
+          created_at?: string
+          data_recebimento?: string | null
+          data_vencimento?: string
+          descricao?: string
+          id?: string
+          observacoes?: string | null
+          status?: string
+          updated_at?: string
+          valor?: number
+        }
+        Relationships: []
+      }
+      fluxo_caixa: {
+        Row: {
+          categoria: string
+          created_at: string
+          data: string
+          descricao: string
+          id: string
+          origem_id: string | null
+          origem_tipo: string | null
+          saldo_acumulado: number | null
+          tipo: string
+          valor: number
+        }
+        Insert: {
+          categoria: string
+          created_at?: string
+          data: string
+          descricao: string
+          id?: string
+          origem_id?: string | null
+          origem_tipo?: string | null
+          saldo_acumulado?: number | null
+          tipo: string
+          valor: number
+        }
+        Update: {
+          categoria?: string
+          created_at?: string
+          data?: string
+          descricao?: string
+          id?: string
+          origem_id?: string | null
+          origem_tipo?: string | null
+          saldo_acumulado?: number | null
+          tipo?: string
+          valor?: number
+        }
+        Relationships: []
+      }
+      notas_fiscais: {
+        Row: {
+          chave_acesso: string | null
+          cliente_cpf_cnpj: string
+          cliente_nome: string
+          created_at: string
+          data_emissao: string | null
+          id: string
+          impostos: Json | null
+          itens: Json
+          mensagem_erro: string | null
+          numero: string | null
+          protocolo_sefaz: string | null
+          serie: string | null
+          status: string
+          tipo: string
+          updated_at: string
+          valor_impostos: number | null
+          valor_total: number
+          xml_nfe: string | null
+        }
+        Insert: {
+          chave_acesso?: string | null
+          cliente_cpf_cnpj: string
+          cliente_nome: string
+          created_at?: string
+          data_emissao?: string | null
+          id?: string
+          impostos?: Json | null
+          itens: Json
+          mensagem_erro?: string | null
+          numero?: string | null
+          protocolo_sefaz?: string | null
+          serie?: string | null
+          status?: string
+          tipo: string
+          updated_at?: string
+          valor_impostos?: number | null
+          valor_total: number
+          xml_nfe?: string | null
+        }
+        Update: {
+          chave_acesso?: string | null
+          cliente_cpf_cnpj?: string
+          cliente_nome?: string
+          created_at?: string
+          data_emissao?: string | null
+          id?: string
+          impostos?: Json | null
+          itens?: Json
+          mensagem_erro?: string | null
+          numero?: string | null
+          protocolo_sefaz?: string | null
+          serie?: string | null
+          status?: string
+          tipo?: string
+          updated_at?: string
+          valor_impostos?: number | null
+          valor_total?: number
+          xml_nfe?: string | null
+        }
+        Relationships: []
+      }
+      regras_fiscais: {
+        Row: {
+          aliquota: number
+          ativo: boolean | null
+          created_at: string
+          descricao: string | null
+          id: string
+          nome: string
+          tipo: string
+          updated_at: string
+        }
+        Insert: {
+          aliquota: number
+          ativo?: boolean | null
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          nome: string
+          tipo: string
+          updated_at?: string
+        }
+        Update: {
+          aliquota?: number
+          ativo?: boolean | null
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          nome?: string
+          tipo?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

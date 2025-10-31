@@ -9,7 +9,8 @@ import {
   Bot, 
   Settings,
   Package,
-  BarChart3
+  BarChart3,
+  FileText
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -23,6 +24,7 @@ const navigation = [
   { name: 'WhatsApp', href: '/whatsapp', icon: MessageSquare },
   { name: 'Agendamentos', href: '/agendamentos', icon: Calendar },
   { name: 'Financeiro', href: '/financeiro', icon: DollarSign },
+  { name: 'Fiscal', href: '/fiscal', icon: FileText },
   { name: 'Produtos', href: '/produtos', icon: Package },
   { name: 'Agentes IA', href: '/agentes', icon: Bot },
   { name: 'Relatórios', href: '/relatorios', icon: BarChart3 },
