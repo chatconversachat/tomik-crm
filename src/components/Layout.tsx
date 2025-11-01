@@ -49,12 +49,12 @@ export function Layout({ children }: LayoutProps) {
     <SidebarProvider>
       <div className="flex min-h-screen w-full">
         <Sidebar collapsible="icon" className="border-r">
-          <SidebarHeader className="border-b bg-gradient-to-r from-primary to-accent">
+          <SidebarHeader className="border-b border-sidebar-border">
             <div className="flex items-center justify-center h-16 px-4">
-              <h1 className="text-xl font-bold text-white group-data-[collapsible=icon]:hidden">
+              <h1 className="text-xl font-bold text-sidebar-foreground group-data-[collapsible=icon]:hidden">
                 Tomik CRM
               </h1>
-              <h1 className="text-xl font-bold text-white hidden group-data-[collapsible=icon]:block">
+              <h1 className="text-xl font-bold text-sidebar-foreground hidden group-data-[collapsible=icon]:block">
                 TC
               </h1>
             </div>
