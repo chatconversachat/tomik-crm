@@ -1,5 +1,5 @@
 import { ReactNode } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   Users, 
@@ -12,7 +12,18 @@ import {
   BarChart3,
   FileText
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarProvider,
+  SidebarHeader,
+} from '@/components/ui/sidebar';
+import { Link } from 'react-router-dom';
 
 interface LayoutProps {
   children: ReactNode;
@@ -35,43 +46,51 @@ export function Layout({ children }: LayoutProps) {
   const location = useLocation();
 
   return (
-    <div className="flex h-screen bg-background">
-      {/* Sidebar */}
-      <div className="w-64 bg-sidebar text-sidebar-foreground border-r border-sidebar-border">
-        <div className="flex items-center justify-center h-16 border-b border-sidebar-border bg-gradient-to-r from-primary to-accent px-4">
-          <h1 className="text-xl font-bold text-white">Tomik CRM</h1>
-        </div>
-        
-        <nav className="flex-1 px-3 py-4 space-y-1">
-          {navigation.map((item) => {
-            const Icon = item.icon;
-            const isActive = location.pathname === item.href;
-            
-            return (
-              <Link
-                key={item.name}
-                to={item.href}
-                className={cn(
-                  'flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200',
-                  isActive
-                    ? 'bg-sidebar-accent text-sidebar-accent-foreground shadow-md'
-                    : 'text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'
-                )}
-              >
-                <Icon className="w-5 h-5 mr-3" />
-                {item.name}
-              </Link>
-            );
-          })}
-        </nav>
-      </div>
+    <SidebarProvider>
+      <div className="flex min-h-screen w-full">
+        <Sidebar collapsible="icon" className="border-r">
+          <SidebarHeader className="border-b bg-gradient-to-r from-primary to-accent">
+            <div className="flex items-center justify-center h-16 px-4">
+              <h1 className="text-xl font-bold text-white group-data-[collapsible=icon]:hidden">
+                Tomik CRM
+              </h1>
+              <h1 className="text-xl font-bold text-white hidden group-data-[collapsible=icon]:block">
+                TC
+              </h1>
+            </div>
+          </SidebarHeader>
+          
+          <SidebarContent>
+            <SidebarGroup>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {navigation.map((item) => {
+                    const Icon = item.icon;
+                    const isActive = location.pathname === item.href;
+                    
+                    return (
+                      <SidebarMenuItem key={item.name}>
+                        <SidebarMenuButton asChild isActive={isActive} tooltip={item.name}>
+                          <Link to={item.href}>
+                            <Icon className="w-5 h-5" />
+                            <span>{item.name}</span>
+                          </Link>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    );
+                  })}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          </SidebarContent>
+        </Sidebar>
 
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <main className="flex-1 overflow-auto">
-          {children}
+        <main className="flex-1 overflow-auto w-full">
+          <div className="container mx-auto p-4 md:p-6 lg:p-8">
+            {children}
+          </div>
         </main>
       </div>
-    </div>
+    </SidebarProvider>
   );
 }
