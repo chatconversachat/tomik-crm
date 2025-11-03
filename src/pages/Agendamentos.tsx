@@ -187,77 +187,93 @@ export default function Agendamentos() {
       </div>
 
       {/* Calendar View */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card className="lg:col-span-1 p-6">
-          <h2 className="text-lg font-semibold text-foreground mb-4">Calendário</h2>
-          {calendarType === 'google' && googleCalendarUrl ? (
-            <div className="w-full">
-              <iframe
-                src={googleCalendarUrl}
-                className="w-full h-[500px] border-0 rounded-lg"
-                title="Google Calendar"
-              />
-            </div>
-          ) : (
-            <Calendar
-              mode="single"
-              selected={selectedDate}
-              onSelect={setSelectedDate}
-              className={cn("rounded-md border w-full pointer-events-auto")}
-            />
-          )}
-        </Card>
-
-        <Card className="lg:col-span-2 p-6">
-          <h2 className="text-lg font-semibold text-foreground mb-4">
-            Agendamentos {selectedDate && `- ${selectedDate.toLocaleDateString('pt-BR')}`}
-          </h2>
-          <div className="space-y-4">
-            {appointments.filter(appointment => {
-              if (!selectedDate) return true;
-              const appointmentDate = new Date(appointment.date);
-              return appointmentDate.toDateString() === selectedDate.toDateString();
-            }).map((appointment) => (
-              <Card key={appointment.id} className="p-4 hover:shadow-md transition-shadow">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-2 mb-2">
-                      <h3 className="font-semibold text-foreground">{appointment.client}</h3>
-                      <Badge variant="outline">{appointment.type}</Badge>
-                      <Badge className={statusColors[appointment.status]}>
-                        {appointment.status}
-                      </Badge>
-                    </div>
-                    <div className="space-y-1">
-                      <div className="flex items-center text-sm text-muted-foreground">
-                        <User className="w-4 h-4 mr-2" />
-                        {appointment.collaborator}
-                      </div>
-                      <div className="flex items-center text-sm text-muted-foreground">
-                        <CalendarIcon className="w-4 h-4 mr-2" />
-                        {new Date(appointment.date).toLocaleDateString('pt-BR')}
-                      </div>
-                      <div className="flex items-center text-sm text-muted-foreground">
-                        <Clock className="w-4 h-4 mr-2" />
-                        {appointment.time}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex space-x-2">
-                    <Button 
-                      size="sm" 
-                      variant="outline"
-                      onClick={() => handleEditAppointment(appointment)}
-                    >
-                      Editar
-                    </Button>
-                  </div>
+      <Card className="p-6">
+        <div className="space-y-6">
+          {/* Calendar Section */}
+          <div>
+            <h2 className="text-lg font-semibold text-foreground mb-4">Calendário</h2>
+            <div className="flex justify-center">
+              {calendarType === 'google' && googleCalendarUrl ? (
+                <div className="w-full max-w-3xl">
+                  <iframe
+                    src={googleCalendarUrl}
+                    className="w-full h-[500px] border-0 rounded-lg"
+                    title="Google Calendar"
+                  />
                 </div>
-              </Card>
-            ))}
+              ) : (
+                <Calendar
+                  mode="single"
+                  selected={selectedDate}
+                  onSelect={setSelectedDate}
+                  className={cn("rounded-md border pointer-events-auto")}
+                />
+              )}
+            </div>
           </div>
-        </Card>
-      </div>
+
+          {/* Appointments List */}
+          <div>
+            <h2 className="text-lg font-semibold text-foreground mb-4">
+              Agendamentos {selectedDate && `- ${selectedDate.toLocaleDateString('pt-BR')}`}
+            </h2>
+            <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2">
+              {appointments.filter(appointment => {
+                if (!selectedDate) return true;
+                const appointmentDate = new Date(appointment.date);
+                return appointmentDate.toDateString() === selectedDate.toDateString();
+              }).length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  Nenhum agendamento para esta data
+                </div>
+              ) : (
+                appointments.filter(appointment => {
+                  if (!selectedDate) return true;
+                  const appointmentDate = new Date(appointment.date);
+                  return appointmentDate.toDateString() === selectedDate.toDateString();
+                }).map((appointment) => (
+                  <Card key={appointment.id} className="p-4 hover:shadow-md transition-shadow">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center flex-wrap gap-2 mb-2">
+                          <h3 className="font-semibold text-foreground">{appointment.client}</h3>
+                          <Badge variant="outline">{appointment.type}</Badge>
+                          <Badge className={statusColors[appointment.status]}>
+                            {appointment.status}
+                          </Badge>
+                        </div>
+                        <div className="space-y-1">
+                          <div className="flex items-center text-sm text-muted-foreground">
+                            <User className="w-4 h-4 mr-2" />
+                            {appointment.collaborator}
+                          </div>
+                          <div className="flex items-center text-sm text-muted-foreground">
+                            <CalendarIcon className="w-4 h-4 mr-2" />
+                            {new Date(appointment.date).toLocaleDateString('pt-BR')}
+                          </div>
+                          <div className="flex items-center text-sm text-muted-foreground">
+                            <Clock className="w-4 h-4 mr-2" />
+                            {appointment.time}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex space-x-2">
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => handleEditAppointment(appointment)}
+                        >
+                          Editar
+                        </Button>
+                      </div>
+                    </div>
+                  </Card>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      </Card>
 
       <AppointmentDialog
         open={dialogOpen}
