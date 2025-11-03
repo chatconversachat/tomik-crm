@@ -2,13 +2,15 @@ import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, Clock, User, Plus, Settings } from 'lucide-react';
+import { Calendar as CalendarIcon, Clock, User, Plus, Settings } from 'lucide-react';
+import { Calendar } from '@/components/ui/calendar';
 import { AppointmentDialog } from '@/components/dialogs/AppointmentDialog';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
 
 const mockAppointments = [
   {
@@ -55,6 +57,7 @@ export default function Agendamentos() {
   const [configOpen, setConfigOpen] = useState(false);
   const [calendarType, setCalendarType] = useState<'system' | 'google'>('system');
   const [googleCalendarUrl, setGoogleCalendarUrl] = useState('');
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
 
   const handleSaveAppointment = (appointment: any) => {
     if (selectedAppointment) {
@@ -196,32 +199,25 @@ export default function Agendamentos() {
               />
             </div>
           ) : (
-            <div className="space-y-4">
-              <div className="aspect-square bg-muted/30 rounded-lg flex items-center justify-center">
-                <Calendar className="w-16 h-16 text-muted-foreground" />
-              </div>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Segunda</span>
-                  <Badge className="bg-primary/10 text-primary">4</Badge>
-                </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Terça</span>
-                  <Badge className="bg-primary/10 text-primary">6</Badge>
-                </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Quarta</span>
-                  <Badge className="bg-primary/10 text-primary">8</Badge>
-                </div>
-              </div>
-            </div>
+            <Calendar
+              mode="single"
+              selected={selectedDate}
+              onSelect={setSelectedDate}
+              className={cn("rounded-md border w-full pointer-events-auto")}
+            />
           )}
         </Card>
 
         <Card className="lg:col-span-2 p-6">
-          <h2 className="text-lg font-semibold text-foreground mb-4">Próximos Agendamentos</h2>
+          <h2 className="text-lg font-semibold text-foreground mb-4">
+            Agendamentos {selectedDate && `- ${selectedDate.toLocaleDateString('pt-BR')}`}
+          </h2>
           <div className="space-y-4">
-            {appointments.map((appointment) => (
+            {appointments.filter(appointment => {
+              if (!selectedDate) return true;
+              const appointmentDate = new Date(appointment.date);
+              return appointmentDate.toDateString() === selectedDate.toDateString();
+            }).map((appointment) => (
               <Card key={appointment.id} className="p-4 hover:shadow-md transition-shadow">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
@@ -238,7 +234,7 @@ export default function Agendamentos() {
                         {appointment.collaborator}
                       </div>
                       <div className="flex items-center text-sm text-muted-foreground">
-                        <Calendar className="w-4 h-4 mr-2" />
+                        <CalendarIcon className="w-4 h-4 mr-2" />
                         {new Date(appointment.date).toLocaleDateString('pt-BR')}
                       </div>
                       <div className="flex items-center text-sm text-muted-foreground">
