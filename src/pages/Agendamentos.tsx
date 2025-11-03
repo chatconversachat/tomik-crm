@@ -59,6 +59,9 @@ export default function Agendamentos() {
   const [googleCalendarUrl, setGoogleCalendarUrl] = useState('');
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
 
+  // Get dates that have appointments
+  const datesWithAppointments = appointments.map(apt => new Date(apt.date));
+
   const handleSaveAppointment = (appointment: any) => {
     if (selectedAppointment) {
       setAppointments(appointments.map(a => a.id === appointment.id ? appointment : a));
@@ -192,7 +195,7 @@ export default function Agendamentos() {
           {/* Calendar Section */}
           <div>
             <h2 className="text-lg font-semibold text-foreground mb-4">Calendário</h2>
-            <div className="flex justify-center">
+            <div className="flex justify-center py-8">
               {calendarType === 'google' && googleCalendarUrl ? (
                 <div className="w-full max-w-3xl">
                   <iframe
@@ -202,12 +205,20 @@ export default function Agendamentos() {
                   />
                 </div>
               ) : (
-                <Calendar
-                  mode="single"
-                  selected={selectedDate}
-                  onSelect={setSelectedDate}
-                  className={cn("rounded-md border pointer-events-auto")}
-                />
+                <div className="w-full max-w-2xl">
+                  <Calendar
+                    mode="single"
+                    selected={selectedDate}
+                    onSelect={setSelectedDate}
+                    modifiers={{
+                      hasAppointments: datesWithAppointments
+                    }}
+                    modifiersClassNames={{
+                      hasAppointments: "relative after:absolute after:bottom-1 after:left-1/2 after:-translate-x-1/2 after:w-1.5 after:h-1.5 after:bg-accent after:rounded-full"
+                    }}
+                    className={cn("rounded-md border pointer-events-auto scale-150 origin-top")}
+                  />
+                </div>
               )}
             </div>
           </div>
