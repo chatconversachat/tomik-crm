@@ -9,8 +9,10 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { DayContentProps } from 'react-day-picker';
 
 const mockAppointments = [
   {
@@ -59,8 +61,57 @@ export default function Agendamentos() {
   const [googleCalendarUrl, setGoogleCalendarUrl] = useState('');
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
 
-  // Get dates that have appointments
-  const datesWithAppointments = appointments.map(apt => new Date(apt.date));
+  // Get appointments count by date
+  const appointmentsByDate = appointments.reduce((acc, apt) => {
+    const dateKey = apt.date;
+    if (!acc[dateKey]) {
+      acc[dateKey] = [];
+    }
+    acc[dateKey].push(apt);
+    return acc;
+  }, {} as Record<string, typeof appointments>);
+
+  // Custom day renderer with appointment count badge
+  const renderDay = (props: DayContentProps) => {
+    const dateKey = props.date.toISOString().split('T')[0];
+    const dayAppointments = appointmentsByDate[dateKey] || [];
+    const count = dayAppointments.length;
+
+    if (count === 0) {
+      return <div className="relative w-full h-full flex items-center justify-center">{props.date.getDate()}</div>;
+    }
+
+    return (
+      <HoverCard openDelay={200}>
+        <HoverCardTrigger asChild>
+          <div className="relative w-full h-full flex items-center justify-center cursor-pointer">
+            {props.date.getDate()}
+            <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-accent text-accent-foreground text-xs font-semibold flex items-center justify-center shadow-sm">
+              {count}
+            </div>
+          </div>
+        </HoverCardTrigger>
+        <HoverCardContent className="w-80 p-3" side="top">
+          <div className="space-y-2">
+            <p className="font-semibold text-sm text-foreground mb-2">
+              Agendamentos - {props.date.toLocaleDateString('pt-BR')}
+            </p>
+            <div className="space-y-2 max-h-48 overflow-y-auto">
+              {dayAppointments.map((apt) => (
+                <div key={apt.id} className="text-xs border-l-2 border-accent pl-2 py-1">
+                  <div className="font-medium text-foreground">{apt.time} - {apt.client}</div>
+                  <div className="text-muted-foreground">{apt.collaborator}</div>
+                  <Badge className={cn("mt-1", statusColors[apt.status])} variant="outline">
+                    {apt.status}
+                  </Badge>
+                </div>
+              ))}
+            </div>
+          </div>
+        </HoverCardContent>
+      </HoverCard>
+    );
+  };
 
   const handleSaveAppointment = (appointment: any) => {
     if (selectedAppointment) {
@@ -205,18 +256,15 @@ export default function Agendamentos() {
                   />
                 </div>
               ) : (
-                <div className="w-full max-w-2xl">
+                <div className="w-full flex justify-center">
                   <Calendar
                     mode="single"
                     selected={selectedDate}
                     onSelect={setSelectedDate}
-                    modifiers={{
-                      hasAppointments: datesWithAppointments
+                    components={{
+                      DayContent: renderDay
                     }}
-                    modifiersClassNames={{
-                      hasAppointments: "relative after:absolute after:bottom-1 after:left-1/2 after:-translate-x-1/2 after:w-1.5 after:h-1.5 after:bg-accent after:rounded-full"
-                    }}
-                    className={cn("rounded-md border pointer-events-auto scale-150 origin-top")}
+                    className={cn("rounded-md border pointer-events-auto")}
                   />
                 </div>
               )}
