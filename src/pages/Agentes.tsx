@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Bot, MessageSquare, TrendingUp, Clock, Plus, Settings2, Cpu, Link, Check, X } from 'lucide-react';
 import { AgentDialog } from '@/components/dialogs/AgentDialog';
 import { useToast } from '@/hooks/use-toast';
-import { AgentConfigModal } from './AgentConfigModal';
+import { AgentConfigModal } from '@/components/AgentConfigModal';  // Fixed import path
 
 const mockAgents = [
   {

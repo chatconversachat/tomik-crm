@@ -9,6 +9,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { Cpu, Link, Check, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import * as Select from '@radix-ui/react-select';
+import { Badge } from '@/components/ui/badge';
 
 interface AgentConfigModalProps {
   open: boolean;
@@ -51,6 +53,7 @@ export function AgentConfigModal({ open, onOpenChange, agent, onSave }: AgentCon
     }
 
     try {
+      // Using any to bypass type checking until database is defined
       const { data, error } = await supabase
         .from('agentes')
         .update({ n8n_url: n8nUrl, n8n_connected: true })
@@ -117,16 +120,16 @@ export function AgentConfigModal({ open, onOpenChange, agent, onSave }: AgentCon
 
             <div className="space-y-2">
               <Label htmlFor="agentStatus">Status</Label>
-              <Select value={agent?.status || 'Ativo'} onValueChange={(value) => onSave({ ...agent, status: value })}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Ativo">Ativo</SelectItem>
-                  <SelectItem value="Pausado">Pausado</SelectItem>
-                  <SelectItem value="Inativo">Inativo</SelectItem>
-                </SelectContent>
-              </Select>
+              <Select.Root value={agent?.status || 'Ativo'} onValueChange={(value) => onSave({ ...agent, status: value })}>
+                <Select.Trigger>
+                  <Select.Value />
+                </Select.Trigger>
+                <Select.Content>
+                  <Select.Item value="Ativo">Ativo</Select.Item>
+                  <Select.Item value="Pausado">Pausado</Select.Item>
+                  <Select.Item value="Inativo">Inativo</Select.Item>
+                </Select.Content>
+              </Select.Root>
             </div>
           </div>
 
