@@ -2,8 +2,10 @@ import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Bot, MessageSquare, TrendingUp, Clock, Plus } from 'lucide-react';
+import { Bot, MessageSquare, TrendingUp, Clock, Plus, Settings2, Cpu, Link, Check, X } from 'lucide-react';
 import { AgentDialog } from '@/components/dialogs/AgentDialog';
+import { useToast } from '@/hooks/use-toast';
+import { AgentConfigModal } from './AgentConfigModal';
 
 const mockAgents = [
   {
@@ -22,7 +24,7 @@ const mockAgents = [
     status: 'Ativo',
     conversations: 89,
     resolution: 92,
-    avgResponse: 1.8,
+    avgResponse: 1.5,
   },
   {
     id: 3,
@@ -31,7 +33,7 @@ const mockAgents = [
     status: 'Pausado',
     conversations: 56,
     resolution: 95,
-    avgResponse: 1.5,
+    avgResponse: 1.2,
   },
 ];
 
@@ -39,6 +41,9 @@ export default function Agentes() {
   const [agents, setAgents] = useState(mockAgents);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedAgent, setSelectedAgent] = useState<any>(null);
+  const [configOpen, setConfigOpen] = useState(false);
+  const [selectedAgentConfig, setSelectedAgentConfig] = useState<any>(null);
+  const { toast } = useToast();
 
   const handleSaveAgent = (agent: any) => {
     if (selectedAgent) {
@@ -52,6 +57,11 @@ export default function Agentes() {
   const handleEditAgent = (agent: any) => {
     setSelectedAgent(agent);
     setDialogOpen(true);
+  };
+
+  const handleOpenConfig = (agent: any) => {
+    setSelectedAgentConfig(agent);
+    setConfigOpen(true);
   };
 
   return (
@@ -127,13 +137,30 @@ export default function Agentes() {
                   <p className="text-sm text-muted-foreground mt-1">{agent.description}</p>
                 </div>
               </div>
-              <Badge className={
-                agent.status === 'Ativo' 
-                  ? 'bg-success/10 text-success' 
-                  : 'bg-warning/10 text-warning'
-              }>
-                {agent.status}
-              </Badge>
+              <div className="flex items-center space-x-2">
+                <Badge className={
+                  agent.status === 'Ativo' 
+                    ? 'bg-success/10 text-success' 
+                    : 'bg-warning/10 text-warning'
+                }>
+                  {agent.status}
+                </Badge>
+                <Button 
+                  variant="outline" 
+                  className="flex-1"
+                  onClick={() => handleEditAgent(agent)}
+                >
+                  Editar
+                </Button>
+                <Button 
+                  variant="outline" 
+                  className="flex-1"
+                  onClick={() => handleOpenConfig(agent)}
+                >
+                  <Settings2 className="w-4 h-4 mr-2" />
+                  Configurar
+                </Button>
+              </div>
             </div>
 
             <div className="grid grid-cols-3 gap-4 mt-6">
@@ -150,35 +177,16 @@ export default function Agentes() {
                 <div className="text-2xl font-bold text-foreground">{agent.avgResponse}s</div>
               </div>
             </div>
-
-            <div className="flex space-x-2 mt-6">
-              <Button 
-                variant="outline" 
-                className="flex-1"
-                onClick={() => handleEditAgent(agent)}
-              >
-                Configurar
-              </Button>
-              <Button variant="outline" className="flex-1">Ver Métricas</Button>
-            </div>
           </Card>
         ))}
       </div>
 
-      {/* Training Section */}
-      <Card className="p-6 bg-gradient-to-br from-muted to-muted/50">
-        <div className="flex items-start space-x-4">
-          <Bot className="w-12 h-12 text-primary" />
-          <div className="flex-1">
-            <h3 className="text-lg font-semibold text-foreground mb-2">Treine seus agentes</h3>
-            <p className="text-muted-foreground mb-4">
-              Melhore o desempenho dos seus agentes adicionando mais exemplos de conversas,
-              ajustando prompts e refinando suas instruções.
-            </p>
-            <Button variant="outline">Acessar Treinamento</Button>
-          </div>
-        </div>
-      </Card>
+      <AgentConfigModal
+        open={configOpen}
+        onOpenChange={setConfigOpen}
+        agent={selectedAgentConfig}
+        onSave={handleSaveAgent}
+      />
 
       <AgentDialog
         open={dialogOpen}
