@@ -53,10 +53,10 @@ export function AgentConfigModal({ open, onOpenChange, agent, onSave }: AgentCon
     }
 
     try {
-      // Using any to bypass type checking until database is defined
+      // Using any to bypass type checking for the table name
       const { data, error } = await supabase
-        .from('agentes')
-        .update({ n8n_url: n8nUrl, n8n_connected: true })
+        .from('agentes' as any)
+        .update({ n8n_url: n8nUrl, n8n_connected: true } as any)
         .eq('id', agent.id);
 
       if (error) {
