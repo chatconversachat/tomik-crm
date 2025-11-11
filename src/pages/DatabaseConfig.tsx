@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Card, Button } from 'src/components/ui';  // Changed to absolute path
+import { Card, Button } from '@/components/ui';  // Changed to use the alias
 import { useToast } from '@/hooks/use-toast';
 
 export default function DatabaseConfig() {
