@@ -1,2 +1,5 @@
-export const Card = () => <div>Card Component</div>;
-export const Button = () => <button>Button Component</button>;
+// This file exports all UI components
+export * from './ui/card';
+export * from './ui/button';
+export * from './ui/input';
+export * from './ui/label';

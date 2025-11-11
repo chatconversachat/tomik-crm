@@ -14,6 +14,7 @@ import Agentes from "./pages/Agentes";
 import Configuracoes from "./pages/Configuracoes";
 import Produtos from "./pages/Produtos";
 import Relatorios from "./pages/Relatorios";
+import DatabaseConfig from "./pages/DatabaseConfig";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -35,6 +36,7 @@ const App = () => (
           <Route path="/agentes" element={<Layout><Agentes /></Layout>} />
           <Route path="/relatorios" element={<Layout><Relatorios /></Layout>} />
           <Route path="/configuracoes" element={<Layout><Configuracoes /></Layout>} />
+          <Route path="/database-config" element={<Layout><DatabaseConfig /></Layout>} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

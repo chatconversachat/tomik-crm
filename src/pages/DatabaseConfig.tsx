@@ -1,10 +1,13 @@
 import { useState } from 'react';
-import { Card, Button } from '@/components/ui';  // Changed to use the alias
+import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 
 export default function DatabaseConfig() {
-  const [supabaseUrl, setSupabaseUrl] = useState('');
-  const [supabaseKey, setSupabaseKey] = useState('');
+  const [supabaseUrl, setSupabaseUrl] = useState(localStorage.getItem('SUPABASE_URL') || '');
+  const [supabaseKey, setSupabaseKey] = useState(localStorage.getItem('SUPABASE_KEY') || '');
   const { toast } = useToast();
 
   const handleSave = () => {
@@ -21,38 +24,40 @@ export default function DatabaseConfig() {
     localStorage.setItem('SUPABASE_KEY', supabaseKey);
     toast({
       title: 'Sucesso',
-      description: 'Configurações salvas',
+      description: 'Configurações salvas! Recarregue a página para aplicar as mudanças.',
     });
   };
 
   return (
-    <Card className="p-8">
-      <h1 className="text-2xl font-bold mb-6">Configuração do Supabase</h1>
-      <div className="space-y-4">
-        <div>
-          <label className="block mb-2">URL do Supabase</label>
-          <input
-            type="text"
-            value={supabaseUrl}
-            onChange={(e) => setSupabaseUrl(e.target.value)}
-            className="w-full p-2 border rounded"
-            placeholder="https://your-project.supabase.co"
-          />
+    <div className="container mx-auto py-8">
+      <Card className="p-8 max-w-2xl mx-auto">
+        <h1 className="text-2xl font-bold mb-6">Configuração do Banco de Dados</h1>
+        <div className="space-y-6">
+          <div className="space-y-2">
+            <Label htmlFor="supabaseUrl">URL do Supabase</Label>
+            <Input
+              id="supabaseUrl"
+              type="text"
+              value={supabaseUrl}
+              onChange={(e) => setSupabaseUrl(e.target.value)}
+              placeholder="https://seu-projeto.supabase.co"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="supabaseKey">Chave API do Supabase</Label>
+            <Input
+              id="supabaseKey"
+              type="password"
+              value={supabaseKey}
+              onChange={(e) => setSupabaseKey(e.target.value)}
+              placeholder="Sua chave API"
+            />
+          </div>
+          <Button onClick={handleSave} className="w-full">
+            Salvar Configurações
+          </Button>
         </div>
-        <div>
-          <label className="block mb-2">Chave API do Supabase</label>
-          <input
-            type="password"
-            value={supabaseKey}
-            onChange={(e) => setSupabaseKey(e.target.value)}
-            className="w-full p-2 border rounded"
-            placeholder="Sua chave API"
-          />
-        </div>
-        <Button onClick={handleSave} className="mt-4">
-          Salvar Configurações
-        </Button>
-      </div>
-    </Card>
+      </Card>
+    </div>
   );
 }
