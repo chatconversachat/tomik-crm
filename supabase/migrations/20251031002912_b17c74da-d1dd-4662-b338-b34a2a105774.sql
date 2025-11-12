@@ -1,138 +1,157 @@
--- Tabela de Contas a Pagar
-CREATE TABLE public.contas_pagar (
-  id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-  descricao TEXT NOT NULL,
-  valor DECIMAL(10,2) NOT NULL,
-  data_vencimento DATE NOT NULL,
-  data_pagamento DATE,
-  categoria TEXT NOT NULL,
-  fornecedor TEXT,
-  status TEXT NOT NULL DEFAULT 'pendente' CHECK (status IN ('pendente', 'pago', 'vencido')),
-  observacoes TEXT,
-  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
-  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
+-- Criação da tabela agentes
+CREATE TABLE IF NOT EXISTS agentes (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  name TEXT NOT NULL,
+  description TEXT,
+  status TEXT DEFAULT 'Ativo',
+  model TEXT DEFAULT 'gemini-flash',
+  prompt TEXT,
+  n8n_webhook TEXT,
+  n8n_connected BOOLEAN DEFAULT false,
+  audio_enabled BOOLEAN DEFAULT false,
+  image_enabled BOOLEAN DEFAULT false,
+  file_enabled BOOLEAN DEFAULT false,
+  conversations INTEGER DEFAULT 0,
+  resolution NUMERIC(5,2) DEFAULT 0,
+  avg_response NUMERIC(5,2) DEFAULT 0,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Tabela de Contas a Receber
-CREATE TABLE public.contas_receber (
-  id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-  descricao TEXT NOT NULL,
-  valor DECIMAL(10,2) NOT NULL,
-  data_vencimento DATE NOT NULL,
-  data_recebimento DATE,
-  categoria TEXT NOT NULL,
-  cliente TEXT,
-  status TEXT NOT NULL DEFAULT 'pendente' CHECK (status IN ('pendente', 'recebido', 'vencido')),
-  observacoes TEXT,
-  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
-  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
+-- Criação da tabela whatsapp_instances
+CREATE TABLE IF NOT EXISTS whatsapp_instances (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  name TEXT NOT NULL,
+  phone TEXT,
+  status TEXT DEFAULT 'disconnected',
+  type TEXT DEFAULT 'whatsapp_cloud',
+  qr_code_data TEXT,
+  evolution_api_url TEXT,
+  evolution_api_key TEXT,
+  session_data JSONB,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Tabela de Regras Fiscais
-CREATE TABLE public.regras_fiscais (
-  id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-  nome TEXT NOT NULL,
-  tipo TEXT NOT NULL CHECK (tipo IN ('ISS', 'ICMS', 'PIS', 'COFINS')),
-  aliquota DECIMAL(5,2) NOT NULL,
-  descricao TEXT,
-  ativo BOOLEAN DEFAULT true,
-  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
-  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
+-- Criação da tabela stages
+CREATE TABLE IF NOT EXISTS stages (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  name TEXT NOT NULL,
+  color TEXT DEFAULT 'bg-gray-100 text-gray-800',
+  "order" INTEGER DEFAULT 0,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Tabela de Configuração Fiscal de Produtos/Serviços
-CREATE TABLE public.config_fiscal (
-  id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+-- Criação da tabela leads
+CREATE TABLE IF NOT EXISTS leads (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  name TEXT NOT NULL,
+  email TEXT,
+  phone TEXT,
+  stage_id UUID REFERENCES stages(id),
+  value NUMERIC(10,2),
+  source TEXT,
+  description TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Criação da tabela config_fiscal
+CREATE TABLE IF NOT EXISTS config_fiscal (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   item_id UUID NOT NULL,
-  item_tipo TEXT NOT NULL CHECK (item_tipo IN ('produto', 'servico')),
+  item_tipo TEXT NOT NULL,
   cfop TEXT NOT NULL,
   cst TEXT,
   ncm TEXT,
-  regras_fiscais_ids UUID[] DEFAULT '{}',
-  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
-  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
+  regras_fiscais_ids UUID[],
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Tabela de Notas Fiscais
-CREATE TABLE public.notas_fiscais (
-  id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-  numero TEXT,
-  serie TEXT,
-  tipo TEXT NOT NULL CHECK (tipo IN ('nfe', 'nfse')),
-  chave_acesso TEXT,
-  status TEXT NOT NULL DEFAULT 'pendente' CHECK (status IN ('pendente', 'emitida', 'cancelada', 'erro')),
-  cliente_nome TEXT NOT NULL,
-  cliente_cpf_cnpj TEXT NOT NULL,
-  valor_total DECIMAL(10,2) NOT NULL,
-  valor_impostos DECIMAL(10,2),
-  itens JSONB NOT NULL,
-  impostos JSONB,
-  xml_nfe TEXT,
-  protocolo_sefaz TEXT,
-  mensagem_erro TEXT,
-  data_emissao TIMESTAMP WITH TIME ZONE,
-  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
-  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
+-- Criação da tabela contas_pagar
+CREATE TABLE IF NOT EXISTS contas_pagar (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  descricao TEXT NOT NULL,
+  valor NUMERIC(10,2) NOT NULL,
+  data_vencimento DATE NOT NULL,
+  data_pagamento DATE,
+  categoria TEXT,
+  fornecedor TEXT,
+  status TEXT DEFAULT 'pendente',
+  observacoes TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Tabela de Fluxo de Caixa
-CREATE TABLE public.fluxo_caixa (
-  id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+-- Criação da tabela contas_receber
+CREATE TABLE IF NOT EXISTS contas_receber (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  descricao TEXT NOT NULL,
+  valor NUMERIC(10,2) NOT NULL,
+  data_vencimento DATE NOT NULL,
+  data_recebimento DATE,
+  categoria TEXT,
+  cliente TEXT,
+  status TEXT DEFAULT 'pendente',
+  observacoes TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Criação da tabela fluxo_caixa
+CREATE TABLE IF NOT EXISTS fluxo_caixa (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   data DATE NOT NULL,
-  tipo TEXT NOT NULL CHECK (tipo IN ('entrada', 'saida')),
+  tipo TEXT NOT NULL, -- entrada/saida
   categoria TEXT NOT NULL,
   descricao TEXT NOT NULL,
-  valor DECIMAL(10,2) NOT NULL,
-  saldo_acumulado DECIMAL(10,2),
+  valor NUMERIC(10,2) NOT NULL,
   origem_id UUID,
-  origem_tipo TEXT CHECK (origem_tipo IN ('conta_pagar', 'conta_receber', 'manual')),
-  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
+  origem_tipo TEXT,
+  saldo_acumulado NUMERIC(10,2),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Enable RLS
-ALTER TABLE public.contas_pagar ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.contas_receber ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.regras_fiscais ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.config_fiscal ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.notas_fiscais ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.fluxo_caixa ENABLE ROW LEVEL SECURITY;
+-- Criação da tabela notas_fiscais
+CREATE TABLE IF NOT EXISTS notas_fiscais (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  tipo TEXT NOT NULL, -- nfse/nfe
+  cliente_nome TEXT NOT NULL,
+  cliente_cpf_cnpj TEXT NOT NULL,
+  valor_total NUMERIC(10,2) NOT NULL,
+  itens JSONB NOT NULL,
+  status TEXT DEFAULT 'pendente',
+  numero TEXT,
+  serie TEXT,
+  chave_acesso TEXT,
+  protocolo_sefaz TEXT,
+  data_emissao TIMESTAMP WITH TIME ZONE,
+  xml_nfe TEXT,
+  mensagem_erro TEXT,
+  impostos JSONB,
+  valor_impostos NUMERIC(10,2),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
 
--- Policies (public access for now - adjust based on auth requirements)
-CREATE POLICY "Allow all operations on contas_pagar" ON public.contas_pagar FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Allow all operations on contas_receber" ON public.contas_receber FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Allow all operations on regras_fiscais" ON public.regras_fiscais FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Allow all operations on config_fiscal" ON public.config_fiscal FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Allow all operations on notas_fiscais" ON public.notas_fiscais FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Allow all operations on fluxo_caixa" ON public.fluxo_caixa FOR ALL USING (true) WITH CHECK (true);
+-- Criação da tabela regras_fiscais
+CREATE TABLE IF NOT EXISTS regras_fiscais (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  nome TEXT NOT NULL,
+  tipo TEXT NOT NULL, -- ISS/ICMS/PIS/COFINS
+  aliquota NUMERIC(5,2) NOT NULL,
+  descricao TEXT,
+  ativo BOOLEAN DEFAULT true,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
 
--- Função para atualizar updated_at
-CREATE OR REPLACE FUNCTION public.update_updated_at_column()
-RETURNS TRIGGER AS $$
+-- Função para executar SQL dinamicamente (necessária para a página de configuração)
+CREATE OR REPLACE FUNCTION execute_sql(sql TEXT)
+RETURNS VOID AS $$
 BEGIN
-  NEW.updated_at = now();
-  RETURN NEW;
+  EXECUTE sql;
 END;
-$$ LANGUAGE plpgsql SET search_path = public;
-
--- Triggers para updated_at
-CREATE TRIGGER update_contas_pagar_updated_at BEFORE UPDATE ON public.contas_pagar
-FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
-
-CREATE TRIGGER update_contas_receber_updated_at BEFORE UPDATE ON public.contas_receber
-FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
-
-CREATE TRIGGER update_regras_fiscais_updated_at BEFORE UPDATE ON public.regras_fiscais
-FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
-
-CREATE TRIGGER update_config_fiscal_updated_at BEFORE UPDATE ON public.config_fiscal
-FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
-
-CREATE TRIGGER update_notas_fiscais_updated_at BEFORE UPDATE ON public.notas_fiscais
-FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
-
--- Índices para performance
-CREATE INDEX idx_contas_pagar_status ON public.contas_pagar(status);
-CREATE INDEX idx_contas_receber_status ON public.contas_receber(status);
-CREATE INDEX idx_notas_fiscais_status ON public.notas_fiscais(status);
-CREATE INDEX idx_fluxo_caixa_data ON public.fluxo_caixa(data);
-CREATE INDEX idx_config_fiscal_item ON public.config_fiscal(item_id, item_tipo);
+$$ LANGUAGE plpgsql SECURITY DEFINER;
