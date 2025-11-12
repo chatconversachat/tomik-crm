@@ -14,6 +14,63 @@ export type Database = {
   }
   public: {
     Tables: {
+      agentes: { // NEW TABLE FOR AGENTS
+        Row: {
+          id: string;
+          name: string;
+          description: string;
+          status: string;
+          model: string;
+          prompt: string;
+          n8n_webhook: string | null;
+          n8n_connected: boolean;
+          audio_enabled: boolean;
+          image_enabled: boolean;
+          file_enabled: boolean;
+          conversations: number;
+          resolution: number;
+          avg_response: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          description: string;
+          status?: string;
+          model?: string;
+          prompt?: string;
+          n8n_webhook?: string | null;
+          n8n_connected?: boolean;
+          audio_enabled?: boolean;
+          image_enabled?: boolean;
+          file_enabled?: boolean;
+          conversations?: number;
+          resolution?: number;
+          avg_response?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          description?: string;
+          status?: string;
+          model?: string;
+          prompt?: string;
+          n8n_webhook?: string | null;
+          n8n_connected?: boolean;
+          audio_enabled?: boolean;
+          image_enabled?: boolean;
+          file_enabled?: boolean;
+          conversations?: number;
+          resolution?: number;
+          avg_response?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       config_fiscal: {
         Row: {
           cfop: string
@@ -173,6 +230,53 @@ export type Database = {
         }
         Relationships: []
       }
+      leads: { // NEW TABLE FOR CRM LEADS
+        Row: {
+          id: string;
+          name: string;
+          email: string | null;
+          phone: string | null;
+          stage_id: string;
+          value: number | null;
+          source: string | null;
+          description: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          email?: string | null;
+          phone?: string | null;
+          stage_id: string;
+          value?: number | null;
+          source?: string | null;
+          description?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          email?: string | null;
+          phone?: string | null;
+          stage_id?: string;
+          value?: number | null;
+          source?: string | null;
+          description?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "leads_stage_id_fkey";
+            columns: ["stage_id"];
+            isOneToOne: false;
+            referencedRelation: "stages";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       notas_fiscais: {
         Row: {
           chave_acesso: string | null
@@ -265,6 +369,75 @@ export type Database = {
           id?: string
           nome?: string
           tipo?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      stages: { // NEW TABLE FOR CRM STAGES
+        Row: {
+          id: string;
+          name: string;
+          color: string;
+          order: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          color: string;
+          order?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          color?: string;
+          order?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      whatsapp_instances: { // UPDATED TABLE FOR EVOLUTION API
+        Row: {
+          id: string
+          name: string
+          phone: string
+          status: string
+          type: string; // 'evolution_api' | 'whatsapp_cloud'
+          qr_code_data: string | null; // Base64 image or URL
+          evolution_api_url: string | null;
+          evolution_api_key: string | null;
+          session_data: Json | null;
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          phone: string
+          status?: string
+          type?: string;
+          qr_code_data?: string | null;
+          evolution_api_url?: string | null;
+          evolution_api_key?: string | null;
+          session_data?: Json | null;
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          phone?: string
+          status?: string
+          type?: string;
+          qr_code_data?: string | null;
+          evolution_api_url?: string | null;
+          evolution_api_key?: string | null;
+          session_data?: Json | null;
+          created_at?: string
           updated_at?: string
         }
         Relationships: []

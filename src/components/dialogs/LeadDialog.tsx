@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 interface LeadDialogProps {
   open: boolean;
@@ -15,19 +16,53 @@ interface LeadDialogProps {
 
 export function LeadDialog({ open, onOpenChange, lead, onSave }: LeadDialogProps) {
   const { toast } = useToast();
+  const [stages, setStages] = useState<any[]>([]);
   const [formData, setFormData] = useState(lead || {
     name: '',
     email: '',
     phone: '',
-    stage: 'Novo',
+    stage_id: '', // Changed to stage_id
     value: '',
     source: '',
+    description: '',
   });
+
+  useEffect(() => {
+    loadStages();
+    if (lead) {
+      setFormData({
+        ...lead,
+        value: lead.value ? lead.value.toString() : '', // Ensure value is string for input
+      });
+    } else {
+      setFormData({
+        name: '',
+        email: '',
+        phone: '',
+        stage_id: '',
+        value: '',
+        source: '',
+        description: '',
+      });
+    }
+  }, [lead, open]);
+
+  const loadStages = async () => {
+    const { data, error } = await supabase.from('stages').select('*').order('order');
+    if (error) {
+      toast({ title: 'Erro', description: 'Erro ao carregar etapas', variant: 'destructive' });
+    } else {
+      setStages(data || []);
+      if (!lead && data && data.length > 0) {
+        setFormData(prev => ({ ...prev, stage_id: data[0].id })); // Set default stage for new leads
+      }
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.name || !formData.email || !formData.phone) {
+    if (!formData.name || !formData.email || !formData.phone || !formData.stage_id) {
       toast({
         title: "Erro",
         description: "Preencha todos os campos obrigatórios.",
@@ -36,12 +71,13 @@ export function LeadDialog({ open, onOpenChange, lead, onSave }: LeadDialogProps
       return;
     }
 
-    onSave({ ...formData, id: lead?.id || Date.now() });
-    toast({
-      title: "Sucesso",
-      description: `Lead ${lead ? 'atualizado' : 'criado'} com sucesso.`,
-    });
-    onOpenChange(false);
+    const leadToSave = {
+      ...formData,
+      value: formData.value ? parseFloat(formData.value) : null,
+      id: lead?.id || crypto.randomUUID(), // Generate UUID for new leads
+    };
+
+    onSave(leadToSave);
   };
 
   return (
@@ -86,16 +122,15 @@ export function LeadDialog({ open, onOpenChange, lead, onSave }: LeadDialogProps
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="stage">Estágio</Label>
-            <Select value={formData.stage} onValueChange={(value) => setFormData({ ...formData, stage: value })}>
-              <SelectTrigger id="stage">
-                <SelectValue />
+            <Label htmlFor="stage_id">Estágio *</Label>
+            <Select value={formData.stage_id} onValueChange={(value) => setFormData({ ...formData, stage_id: value })}>
+              <SelectTrigger id="stage_id">
+                <SelectValue placeholder="Selecione o estágio" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Novo">Novo</SelectItem>
-                <SelectItem value="Qualificado">Qualificado</SelectItem>
-                <SelectItem value="Proposta">Proposta</SelectItem>
-                <SelectItem value="Fechado">Fechado</SelectItem>
+                {stages.map(stage => (
+                  <SelectItem key={stage.id} value={stage.id}>{stage.name}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -104,9 +139,10 @@ export function LeadDialog({ open, onOpenChange, lead, onSave }: LeadDialogProps
             <Label htmlFor="value">Valor Estimado</Label>
             <Input
               id="value"
+              type="number"
               value={formData.value}
               onChange={(e) => setFormData({ ...formData, value: e.target.value })}
-              placeholder="R$ 5.000"
+              placeholder="5000.00"
             />
           </div>
 
@@ -122,6 +158,7 @@ export function LeadDialog({ open, onOpenChange, lead, onSave }: LeadDialogProps
                 <SelectItem value="Instagram">Instagram</SelectItem>
                 <SelectItem value="Site">Site</SelectItem>
                 <SelectItem value="Indicação">Indicação</SelectItem>
+                <SelectItem value="Outros">Outros</SelectItem>
               </SelectContent>
             </Select>
           </div>

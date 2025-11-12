@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Search, Plus, Mail, Phone, MoreVertical, Pencil, Settings2 } from 'lucide-react';
+import { Search, Plus, Mail, Phone, MoreVertical, Pencil, Settings2, Trash2 } from 'lucide-react';
 import { LeadDialog } from '@/components/dialogs/LeadDialog';
 import { StageDialog } from '@/components/dialogs/StageDialog';
 import {
@@ -24,57 +24,31 @@ import {
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { cn } from '@/lib/utils';
-
-const mockLeads = [
-  {
-    id: 1,
-    name: 'João Silva',
-    email: 'joao@email.com',
-    phone: '(11) 98765-4321',
-    stage: 'Novo',
-    value: 'R$ 5.000',
-    source: 'WhatsApp',
-  },
-  {
-    id: 2,
-    name: 'Maria Santos',
-    email: 'maria@email.com',
-    phone: '(21) 99876-5432',
-    stage: 'Qualificado',
-    value: 'R$ 12.000',
-    source: 'Facebook',
-  },
-  {
-    id: 3,
-    name: 'Pedro Oliveira',
-    email: 'pedro@email.com',
-    phone: '(31) 97654-3210',
-    stage: 'Proposta',
-    value: 'R$ 8.500',
-    source: 'Instagram',
-  },
-];
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 interface Stage {
   id: string;
   name: string;
   color: string;
+  order: number;
 }
 
 interface Lead {
-  id: number;
+  id: string;
   name: string;
-  email: string;
-  phone: string;
-  stage: string;
-  value: string;
-  source: string;
+  email: string | null;
+  phone: string | null;
+  stage_id: string;
+  value: number | null;
+  source: string | null;
+  description: string | null;
 }
 
 interface LeadCardProps {
   lead: Lead;
   onEdit: (lead: Lead) => void;
-  onDelete: (id: number) => void;
+  onDelete: (id: string) => void;
 }
 
 function LeadCard({ lead, onEdit, onDelete }: LeadCardProps) {
@@ -97,8 +71,8 @@ function LeadCard({ lead, onEdit, onDelete }: LeadCardProps) {
       ref={setNodeRef}
       style={style}
       className={cn(
-        "bg-card rounded-lg border p-4 space-y-3 cursor-move",
-        isDragging && "opacity-50"
+        "bg-card rounded-lg border p-4 space-y-3 cursor-grab active:cursor-grabbing",
+        isDragging && "opacity-50 shadow-lg"
       )}
       {...attributes}
       {...listeners}
@@ -106,7 +80,11 @@ function LeadCard({ lead, onEdit, onDelete }: LeadCardProps) {
       <div className="flex items-start justify-between">
         <div>
           <h4 className="font-semibold text-foreground">{lead.name}</h4>
-          <p className="text-sm font-semibold text-accent mt-1">{lead.value}</p>
+          {lead.value && (
+            <p className="text-sm font-semibold text-accent mt-1">
+              R$ {lead.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+            </p>
+          )}
         </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -123,6 +101,7 @@ function LeadCard({ lead, onEdit, onDelete }: LeadCardProps) {
               onClick={(e) => { e.stopPropagation(); onDelete(lead.id); }} 
               className="text-destructive"
             >
+              <Trash2 className="w-4 h-4 mr-2" />
               Excluir
             </DropdownMenuItem>
           </DropdownMenuContent>
@@ -130,37 +109,62 @@ function LeadCard({ lead, onEdit, onDelete }: LeadCardProps) {
       </div>
 
       <div className="space-y-2 text-sm">
-        <div className="flex items-center text-muted-foreground">
-          <Mail className="w-4 h-4 mr-2" />
-          {lead.email}
-        </div>
-        <div className="flex items-center text-muted-foreground">
-          <Phone className="w-4 h-4 mr-2" />
-          {lead.phone}
-        </div>
+        {lead.email && (
+          <div className="flex items-center text-muted-foreground">
+            <Mail className="w-4 h-4 mr-2" />
+            {lead.email}
+          </div>
+        )}
+        {lead.phone && (
+          <div className="flex items-center text-muted-foreground">
+            <Phone className="w-4 h-4 mr-2" />
+            {lead.phone}
+          </div>
+        )}
       </div>
 
-      <div className="text-xs text-muted-foreground">
-        Origem: {lead.source}
-      </div>
+      {lead.source && (
+        <div className="text-xs text-muted-foreground">
+          Origem: {lead.source}
+        </div>
+      )}
     </div>
   );
 }
 
 export default function CRM() {
+  const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState('');
-  const [leads, setLeads] = useState<Lead[]>(mockLeads);
+  const [leads, setLeads] = useState<Lead[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [stageDialogOpen, setStageDialogOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [activeLead, setActiveLead] = useState<Lead | null>(null);
   
-  const [stages, setStages] = useState<Stage[]>([
-    { id: 'novo', name: 'Novo', color: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300' },
-    { id: 'qualificado', name: 'Qualificado', color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300' },
-    { id: 'proposta', name: 'Proposta', color: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300' },
-    { id: 'fechado', name: 'Fechado', color: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' },
-  ]);
+  const [stages, setStages] = useState<Stage[]>([]);
+
+  useEffect(() => {
+    loadStages();
+    loadLeads();
+  }, []);
+
+  const loadStages = async () => {
+    const { data, error } = await supabase.from('stages').select('*').order('order');
+    if (error) {
+      toast({ title: 'Erro', description: 'Erro ao carregar etapas', variant: 'destructive' });
+    } else {
+      setStages(data || []);
+    }
+  };
+
+  const loadLeads = async () => {
+    const { data, error } = await supabase.from('leads').select('*');
+    if (error) {
+      toast({ title: 'Erro', description: 'Erro ao carregar leads', variant: 'destructive' });
+    } else {
+      setLeads(data || []);
+    }
+  };
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -175,27 +179,48 @@ export default function CRM() {
     setActiveLead(lead || null);
   };
 
-  const handleDragEnd = (event: DragEndEvent) => {
+  const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
     setActiveLead(null);
 
-    if (!over) return;
+    if (!over || active.id === over.id) return;
 
-    const leadId = active.id as number;
-    const newStage = over.id as string;
+    const leadId = active.id as string;
+    const newStageId = over.id as string;
 
-    setLeads(leads.map(lead => 
-      lead.id === leadId ? { ...lead, stage: newStage } : lead
-    ));
+    const { error } = await supabase
+      .from('leads')
+      .update({ stage_id: newStageId })
+      .eq('id', leadId);
+
+    if (error) {
+      toast({ title: 'Erro', description: 'Erro ao atualizar estágio do lead', variant: 'destructive' });
+    } else {
+      setLeads(prevLeads => 
+        prevLeads.map(lead => 
+          lead.id === leadId ? { ...lead, stage_id: newStageId } : lead
+        )
+      );
+      toast({ title: 'Sucesso', description: 'Estágio do lead atualizado!' });
+    }
   };
 
-  const handleSaveLead = (lead: Lead) => {
+  const handleSaveLead = async (lead: Lead) => {
+    let result;
     if (selectedLead) {
-      setLeads(leads.map(l => l.id === lead.id ? lead : l));
+      result = await supabase.from('leads').update(lead).eq('id', lead.id);
     } else {
-      setLeads([...leads, { ...lead, id: Date.now() }]);
+      result = await supabase.from('leads').insert([lead]);
     }
-    setSelectedLead(null);
+
+    if (result.error) {
+      toast({ title: 'Erro', description: `Erro ao salvar lead: ${result.error.message}`, variant: 'destructive' });
+    } else {
+      toast({ title: 'Sucesso', description: `Lead ${selectedLead ? 'atualizado' : 'criado'} com sucesso.` });
+      loadLeads();
+      setDialogOpen(false);
+      setSelectedLead(null);
+    }
   };
 
   const handleEditLead = (lead: Lead) => {
@@ -203,21 +228,48 @@ export default function CRM() {
     setDialogOpen(true);
   };
 
-  const handleDeleteLead = (id: number) => {
-    setLeads(leads.filter(l => l.id !== id));
+  const handleDeleteLead = async (id: string) => {
+    if (confirm('Tem certeza que deseja excluir este lead?')) {
+      const { error } = await supabase.from('leads').delete().eq('id', id);
+      if (error) {
+        toast({ title: 'Erro', description: 'Erro ao excluir lead', variant: 'destructive' });
+      } else {
+        toast({ title: 'Sucesso', description: 'Lead excluído com sucesso.' });
+        loadLeads();
+      }
+    }
   };
 
-  const handleSaveStages = (newStages: Stage[]) => {
-    setStages(newStages);
+  const handleSaveStages = async (newStages: Stage[]) => {
+    // Delete removed stages
+    const removedStageIds = stages.filter(s => !newStages.some(ns => ns.id === s.id)).map(s => s.id);
+    if (removedStageIds.length > 0) {
+      const { error } = await supabase.from('stages').delete().in('id', removedStageIds);
+      if (error) {
+        toast({ title: 'Erro', description: 'Erro ao excluir etapas antigas', variant: 'destructive' });
+        return;
+      }
+    }
+
+    // Upsert (insert/update) remaining stages
+    const { error } = await supabase.from('stages').upsert(newStages, { onConflict: 'id' });
+    if (error) {
+      toast({ title: 'Erro', description: `Erro ao salvar etapas: ${error.message}`, variant: 'destructive' });
+    } else {
+      toast({ title: 'Sucesso', description: 'Etapas atualizadas com sucesso!' });
+      loadStages();
+      setStageDialogOpen(false);
+    }
   };
 
   const filteredLeads = leads.filter(lead => 
     lead.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    lead.email.toLowerCase().includes(searchQuery.toLowerCase())
+    (lead.email && lead.email.toLowerCase().includes(searchQuery.toLowerCase())) ||
+    (lead.phone && lead.phone.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
-  const getLeadsByStage = (stageName: string) => {
-    return filteredLeads.filter(lead => lead.stage === stageName);
+  const getLeadsByStage = (stageId: string) => {
+    return filteredLeads.filter(lead => lead.stage_id === stageId);
   };
 
   return (
@@ -253,19 +305,25 @@ export default function CRM() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card className="p-4">
           <div className="text-sm text-muted-foreground">Total de Leads</div>
-          <div className="text-2xl font-bold text-foreground mt-1">248</div>
+          <div className="text-2xl font-bold text-foreground mt-1">{leads.length}</div>
         </Card>
         <Card className="p-4">
           <div className="text-sm text-muted-foreground">Qualificados</div>
-          <div className="text-2xl font-bold text-foreground mt-1">142</div>
+          <div className="text-2xl font-bold text-foreground mt-1">
+            {leads.filter(l => stages.find(s => s.id === l.stage_id)?.name === 'Qualificado').length}
+          </div>
         </Card>
         <Card className="p-4">
           <div className="text-sm text-muted-foreground">Em Proposta</div>
-          <div className="text-2xl font-bold text-foreground mt-1">56</div>
+          <div className="text-2xl font-bold text-foreground mt-1">
+            {leads.filter(l => stages.find(s => s.id === l.stage_id)?.name === 'Proposta').length}
+          </div>
         </Card>
         <Card className="p-4">
           <div className="text-sm text-muted-foreground">Fechados</div>
-          <div className="text-2xl font-bold text-foreground mt-1">89</div>
+          <div className="text-2xl font-bold text-foreground mt-1">
+            {leads.filter(l => stages.find(s => s.id === l.stage_id)?.name === 'Fechado').length}
+          </div>
         </Card>
       </div>
 
@@ -289,7 +347,7 @@ export default function CRM() {
       >
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {stages.map((stage) => {
-            const stageLeads = getLeadsByStage(stage.name);
+            const stageLeads = getLeadsByStage(stage.id);
             
             return (
               <Card key={stage.id} className="flex flex-col h-[calc(100vh-320px)]">
@@ -305,7 +363,7 @@ export default function CRM() {
                 </div>
 
                 <SortableContext
-                  id={stage.name}
+                  id={stage.id}
                   items={stageLeads.map(l => l.id)}
                   strategy={verticalListSortingStrategy}
                 >

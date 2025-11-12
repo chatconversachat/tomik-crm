@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 
 interface WhatsAppInstanceDialogProps {
@@ -18,12 +19,30 @@ export function WhatsAppInstanceDialog({ open, onOpenChange, instance, onSave }:
     name: '',
     phone: '',
     status: 'disconnected',
+    type: 'whatsapp_cloud', // Default type
+    evolution_api_url: '',
+    evolution_api_key: '',
   });
+
+  useEffect(() => {
+    if (instance) {
+      setFormData(instance);
+    } else {
+      setFormData({
+        name: '',
+        phone: '',
+        status: 'disconnected',
+        type: 'whatsapp_cloud',
+        evolution_api_url: '',
+        evolution_api_key: '',
+      });
+    }
+  }, [instance, open]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.name || !formData.phone) {
+    if (!formData.name || !formData.phone || !formData.type) {
       toast({
         title: "Erro",
         description: "Preencha todos os campos obrigatórios.",
@@ -32,11 +51,16 @@ export function WhatsAppInstanceDialog({ open, onOpenChange, instance, onSave }:
       return;
     }
 
-    onSave({ ...formData, id: instance?.id || Date.now() });
-    toast({
-      title: "Sucesso",
-      description: `Instância ${instance ? 'atualizada' : 'criada'} com sucesso.`,
-    });
+    if (formData.type === 'evolution_api' && (!formData.evolution_api_url || !formData.evolution_api_key)) {
+      toast({
+        title: "Erro",
+        description: "Para Evolution API, URL e API Key são obrigatórios.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    onSave({ ...formData, id: instance?.id || Date.now().toString() });
     onOpenChange(false);
   };
 
@@ -69,6 +93,43 @@ export function WhatsAppInstanceDialog({ open, onOpenChange, instance, onSave }:
               placeholder="+55 11 98765-4321"
             />
           </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="type">Tipo de Instância *</Label>
+            <Select value={formData.type} onValueChange={(value) => setFormData({ ...formData, type: value })}>
+              <SelectTrigger id="type">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="whatsapp_cloud">WhatsApp Cloud API</SelectItem>
+                <SelectItem value="evolution_api">Evolution API</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {formData.type === 'evolution_api' && (
+            <>
+              <div className="space-y-2">
+                <Label htmlFor="evolution_api_url">URL da Evolution API *</Label>
+                <Input
+                  id="evolution_api_url"
+                  value={formData.evolution_api_url}
+                  onChange={(e) => setFormData({ ...formData, evolution_api_url: e.target.value })}
+                  placeholder="https://sua-evolution-api.com"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="evolution_api_key">API Key da Evolution *</Label>
+                <Input
+                  id="evolution_api_key"
+                  type="password"
+                  value={formData.evolution_api_key}
+                  onChange={(e) => setFormData({ ...formData, evolution_api_key: e.target.value })}
+                  placeholder="Sua API Key da Evolution"
+                />
+              </div>
+            </>
+          )}
 
           <div className="flex justify-end space-x-2 pt-4">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>

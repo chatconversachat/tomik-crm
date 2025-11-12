@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -19,45 +19,64 @@ import {
   Save,
   Plug,
   Check,
-  X
+  X,
+  QrCode,
+  Loader2
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { WhatsAppInstanceDialog } from '@/components/dialogs/WhatsAppInstanceDialog';
-
-const mockInstances = [
-  { id: 1, name: 'Principal', phone: '+55 11 98765-4321', status: 'connected' },
-  { id: 2, name: 'Vendas', phone: '+55 21 99876-5432', status: 'connected' },
-  { id: 3, name: 'Suporte', phone: '+55 31 97654-3210', status: 'disconnected' },
-];
+import { supabase } from '@/integrations/supabase/client';
 
 export default function Configuracoes() {
   const [orgName, setOrgName] = useState('Tomik CRM');
   const [orgEmail, setOrgEmail] = useState('contato@tomikcrm.com');
   const [aiEnabled, setAiEnabled] = useState(true);
   const [notifications, setNotifications] = useState(true);
-  const [instances, setInstances] = useState(mockInstances);
+  const [instances, setInstances] = useState<any[]>([]); // Fetch from DB
   const [instanceDialogOpen, setInstanceDialogOpen] = useState(false);
   const [selectedInstance, setSelectedInstance] = useState<any>(null);
   const [n8nUrl, setN8nUrl] = useState('');
   const [n8nApiKey, setN8nApiKey] = useState('');
   const [evolutionApiUrl, setEvolutionApiUrl] = useState('');
   const [evolutionApiKey, setEvolutionApiKey] = useState('');
+  const [loadingQr, setLoadingQr] = useState<string | null>(null); // Stores instance ID being loaded
 
-  const handleSaveInstance = (instance: any) => {
+  useEffect(() => {
+    loadInstances();
+  }, []);
+
+  const loadInstances = async () => {
+    const { data, error } = await supabase.from('whatsapp_instances').select('*');
+    if (error) {
+      toast({ title: 'Erro', description: 'Erro ao carregar instâncias', variant: 'destructive' });
+    } else {
+      setInstances(data || []);
+    }
+  };
+
+  const handleSaveInstance = async (instance: any) => {
+    let result;
     if (selectedInstance) {
-      setInstances(instances.map(i => i.id === instance.id ? instance : i));
+      result = await supabase.from('whatsapp_instances').update(instance).eq('id', instance.id);
+    } else {
+      result = await supabase.from('whatsapp_instances').insert([instance]);
+    }
+
+    if (result.error) {
       toast({
-        title: "Instância atualizada",
-        description: "A instância foi atualizada com sucesso.",
+        title: 'Erro',
+        description: `Erro ao salvar instância: ${result.error.message}`,
+        variant: 'destructive',
       });
     } else {
-      setInstances([...instances, { ...instance, id: Date.now() }]);
       toast({
-        title: "Instância criada",
-        description: "Nova instância WhatsApp criada com sucesso.",
+        title: 'Sucesso',
+        description: `Instância ${selectedInstance ? 'atualizada' : 'criada'} com sucesso.`,
       });
+      loadInstances();
+      setInstanceDialogOpen(false);
+      setSelectedInstance(null);
     }
-    setSelectedInstance(null);
   };
 
   const handleEditInstance = (instance: any) => {
@@ -65,25 +84,102 @@ export default function Configuracoes() {
     setInstanceDialogOpen(true);
   };
 
-  const handleDeleteInstance = (id: number) => {
-    setInstances(instances.filter(i => i.id !== id));
-    toast({
-      title: "Instância removida",
-      description: "A instância foi removida com sucesso.",
-    });
+  const handleDeleteInstance = async (id: string) => {
+    if (confirm('Tem certeza que deseja excluir esta instância?')) {
+      const { error } = await supabase.from('whatsapp_instances').delete().eq('id', id);
+      if (error) {
+        toast({ title: 'Erro', description: 'Erro ao excluir instância', variant: 'destructive' });
+      } else {
+        toast({ title: 'Sucesso', description: 'Instância excluída com sucesso.' });
+        loadInstances();
+      }
+    }
   };
 
-  const handleConnectInstance = (id: number) => {
-    setInstances(instances.map(i => 
-      i.id === id ? { ...i, status: i.status === 'connected' ? 'disconnected' : 'connected' } : i
-    ));
-    const instance = instances.find(i => i.id === id);
-    toast({
-      title: instance?.status === 'connected' ? "Instância desconectada" : "Instância conectada",
-      description: instance?.status === 'connected' 
-        ? "A instância foi desconectada com sucesso." 
-        : "A instância foi conectada com sucesso.",
-    });
+  const handleConnectEvolutionAPI = async (instance: any) => {
+    setLoadingQr(instance.id);
+    try {
+      const { data, error } = await supabase.functions.invoke('evolution-api-connect', {
+        body: {
+          instanceId: instance.id,
+          evolutionApiUrl: instance.evolution_api_url,
+          evolutionApiKey: instance.evolution_api_key,
+          action: 'connect',
+        },
+      });
+
+      if (error) throw error;
+      if (!data.sucesso) throw new Error(data.erro || 'Falha ao conectar Evolution API.');
+
+      toast({ title: 'Sucesso', description: 'QR Code gerado. Escaneie para conectar.' });
+      loadInstances(); // Refresh to show QR code
+    } catch (error: any) {
+      toast({
+        title: 'Erro',
+        description: `Erro ao conectar Evolution API: ${error.message || error}`,
+        variant: 'destructive',
+      });
+    } finally {
+      setLoadingQr(null);
+    }
+  };
+
+  const handleDisconnectEvolutionAPI = async (instance: any) => {
+    if (!confirm('Tem certeza que deseja desconectar esta instância?')) return;
+
+    setLoadingQr(instance.id);
+    try {
+      const { data, error } = await supabase.functions.invoke('evolution-api-connect', {
+        body: {
+          instanceId: instance.id,
+          evolutionApiUrl: instance.evolution_api_url,
+          evolutionApiKey: instance.evolution_api_key,
+          action: 'disconnect',
+        },
+      });
+
+      if (error) throw error;
+      if (!data.sucesso) throw new Error(data.erro || 'Falha ao desconectar Evolution API.');
+
+      toast({ title: 'Sucesso', description: 'Instância desconectada com sucesso.' });
+      loadInstances();
+    } catch (error: any) {
+      toast({
+        title: 'Erro',
+        description: `Erro ao desconectar Evolution API: ${error.message || error}`,
+        variant: 'destructive',
+      });
+    } finally {
+      setLoadingQr(null);
+    }
+  };
+
+  const handleCheckStatusEvolutionAPI = async (instance: any) => {
+    setLoadingQr(instance.id); // Use loading state for status check too
+    try {
+      const { data, error } = await supabase.functions.invoke('evolution-api-connect', {
+        body: {
+          instanceId: instance.id,
+          evolutionApiUrl: instance.evolution_api_url,
+          evolutionApiKey: instance.evolution_api_key,
+          action: 'check_status',
+        },
+      });
+
+      if (error) throw error;
+      if (!data.sucesso) throw new Error(data.erro || 'Falha ao verificar status da Evolution API.');
+
+      toast({ title: 'Status Verificado', description: `Status da instância: ${data.status}` });
+      loadInstances();
+    } catch (error: any) {
+      toast({
+        title: 'Erro',
+        description: `Erro ao verificar status Evolution API: ${error.message || error}`,
+        variant: 'destructive',
+      });
+    } finally {
+      setLoadingQr(null);
+    }
   };
 
   const handleSaveIntegrations = () => {
@@ -195,34 +291,73 @@ export default function Configuracoes() {
             </div>
             <div className="space-y-3">
               {instances.map((instance) => (
-                <div key={instance.id} className="flex items-center justify-between p-4 border rounded-lg">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3">
+                <div key={instance.id} className="flex flex-col md:flex-row items-start md:items-center justify-between p-4 border rounded-lg">
+                  <div className="flex-1 mb-3 md:mb-0">
+                    <div className="flex items-center gap-3 flex-wrap">
                       <h3 className="font-semibold text-foreground">{instance.name}</h3>
                       <Badge variant={instance.status === 'connected' ? 'default' : 'destructive'}>
-                        {instance.status === 'connected' ? 'Conectado' : 'Desconectado'}
+                        {instance.status === 'connected' ? 'Conectado' : instance.status === 'qr_pending' ? 'Aguardando QR' : 'Desconectado'}
+                      </Badge>
+                      <Badge variant="outline" className="text-xs">
+                        {instance.type === 'evolution_api' ? 'Evolution API' : 'WhatsApp Cloud'}
                       </Badge>
                     </div>
                     <p className="text-sm text-muted-foreground mt-1">{instance.phone}</p>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Button 
-                      variant={instance.status === 'connected' ? 'destructive' : 'default'}
-                      size="sm"
-                      onClick={() => handleConnectInstance(instance.id)}
-                    >
-                      {instance.status === 'connected' ? (
-                        <>
+                  
+                  {instance.type === 'evolution_api' && instance.status === 'qr_pending' && instance.qr_code_data && (
+                    <div className="flex flex-col items-center justify-center p-4 border rounded-lg bg-muted/50 mb-3 md:mb-0 md:mr-4">
+                      <img src={instance.qr_code_data} alt="QR Code" className="w-32 h-32 object-contain" />
+                      <p className="text-xs text-muted-foreground mt-2">Escaneie com seu celular</p>
+                    </div>
+                  )}
+
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {instance.type === 'evolution_api' && instance.status !== 'connected' && (
+                      <Button 
+                        variant="default"
+                        size="sm"
+                        onClick={() => handleConnectEvolutionAPI(instance)}
+                        disabled={loadingQr === instance.id}
+                      >
+                        {loadingQr === instance.id ? (
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        ) : (
+                          <QrCode className="w-4 h-4 mr-2" />
+                        )}
+                        Conectar
+                      </Button>
+                    )}
+                    {instance.type === 'evolution_api' && instance.status === 'connected' && (
+                      <Button 
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => handleDisconnectEvolutionAPI(instance)}
+                        disabled={loadingQr === instance.id}
+                      >
+                        {loadingQr === instance.id ? (
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        ) : (
                           <X className="w-4 h-4 mr-2" />
-                          Desconectar
-                        </>
-                      ) : (
-                        <>
+                        )}
+                        Desconectar
+                      </Button>
+                    )}
+                    {instance.type === 'evolution_api' && (
+                      <Button 
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleCheckStatusEvolutionAPI(instance)}
+                        disabled={loadingQr === instance.id}
+                      >
+                        {loadingQr === instance.id ? (
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        ) : (
                           <Check className="w-4 h-4 mr-2" />
-                          Conectar
-                        </>
-                      )}
-                    </Button>
+                        )}
+                        Status
+                      </Button>
+                    )}
                     <Button 
                       variant="outline" 
                       size="sm"
@@ -284,7 +419,7 @@ export default function Configuracoes() {
           </Card>
 
           <Card className="p-6">
-            <h2 className="text-xl font-bold text-foreground mb-4">Evolution API</h2>
+            <h2 className="text-xl font-bold text-foreground mb-4">Evolution API (Global)</h2>
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="evolution-url">URL da Evolution API</Label>
@@ -295,7 +430,7 @@ export default function Configuracoes() {
                   placeholder="https://sua-evolution-api.com"
                 />
                 <p className="text-xs text-muted-foreground">
-                  URL base da sua Evolution API
+                  URL base da sua Evolution API (para criar novas instâncias)
                 </p>
               </div>
               <div className="space-y-2">
@@ -308,7 +443,7 @@ export default function Configuracoes() {
                   placeholder="Sua API Key da Evolution"
                 />
                 <p className="text-xs text-muted-foreground">
-                  API key para autenticação na Evolution API
+                  API key para autenticação na Evolution API (para criar novas instâncias)
                 </p>
               </div>
             </div>
