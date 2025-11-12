@@ -16,11 +16,14 @@ import Produtos from "./pages/Produtos";
 import Relatorios from "./pages/Relatorios";
 import DatabaseConfig from "./pages/DatabaseConfig";
 import NotFound from "./pages/NotFound";
+import { useSchemaCheck } from "./hooks/useSchemaCheck";
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
+const AppContent = () => {
+  useSchemaCheck(); // Verificação automática de esquema
+  
+  return (
     <TooltipProvider>
       <Toaster />
       <Sonner />
@@ -42,6 +45,12 @@ const App = () => (
         </Routes>
       </BrowserRouter>
     </TooltipProvider>
+  );
+};
+
+const App = () => (
+  <QueryClientProvider client={queryClient}>
+    <AppContent />
   </QueryClientProvider>
 );
 

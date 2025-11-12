@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,7 +13,9 @@ import {
   CheckCircle, 
   AlertCircle,
   Play,
-  FileText
+  FileText,
+  ShieldAlert,
+  ShieldCheck
 } from 'lucide-react';
 
 // Definição do esquema das tabelas
@@ -170,6 +172,9 @@ const TABLE_DEFINITIONS = {
   `
 };
 
+// Versão do esquema para rastreamento de atualizações
+const SCHEMA_VERSION = '1.0.0';
+
 export default function DatabaseConfig() {
   const [supabaseUrl, setSupabaseUrl] = useState(localStorage.getItem('SUPABASE_URL') || '');
   const [supabaseKey, setSupabaseKey] = useState(localStorage.getItem('SUPABASE_KEY') || '');
@@ -178,13 +183,62 @@ export default function DatabaseConfig() {
   const [schemaStatus, setSchemaStatus] = useState<'idle' | 'checking' | 'updating' | 'updated' | 'error'>('idle');
   const [schemaLog, setSchemaLog] = useState<string[]>([]);
   const [missingTables, setMissingTables] = useState<string[]>([]);
+  const [currentSchemaVersion, setCurrentSchemaVersion] = useState<string | null>(null);
   const { toast } = useToast();
 
-  useEffect(() => {
-    checkConnection();
+  // Verificar versão do esquema
+  const checkSchemaVersion = useCallback(async () => {
+    try {
+      const { data, error } = await (supabase as any)
+        .from('schema_migrations')
+        .select('version')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (error && error.code !== '42P01') {
+        throw error;
+      }
+
+      if (data) {
+        setCurrentSchemaVersion(data.version);
+        return data.version;
+      }
+      return null;
+    } catch (error) {
+      console.warn('Erro ao verificar versão do esquema:', error);
+      return null;
+    }
   }, []);
 
-  const checkConnection = async () => {
+  // Atualizar versão do esquema
+  const updateSchemaVersion = useCallback(async (version: string) => {
+    try {
+      // Criar tabela de migrações se não existir
+      await (supabase as any).rpc('execute_sql', { 
+        sql: `
+          CREATE TABLE IF NOT EXISTS schema_migrations (
+            id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+            version TEXT NOT NULL,
+            description TEXT,
+            created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+          );
+        ` 
+      });
+
+      // Inserir nova versão
+      await (supabase as any)
+        .from('schema_migrations')
+        .insert({
+          version,
+          description: `Atualização automática para versão ${version}`
+        });
+    } catch (error) {
+      console.error('Erro ao atualizar versão do esquema:', error);
+    }
+  }, []);
+
+  const checkConnection = useCallback(async () => {
     if (!supabaseUrl || !supabaseKey) {
       setIsConnected(false);
       setConnectionStatus('error');
@@ -205,6 +259,10 @@ export default function DatabaseConfig() {
 
       setIsConnected(true);
       setConnectionStatus('connected');
+      
+      // Verificar versão do esquema após conexão
+      await checkSchemaVersion();
+      
       toast({
         title: 'Conectado',
         description: 'Conexão com o banco de dados estabelecida com sucesso.',
@@ -218,7 +276,11 @@ export default function DatabaseConfig() {
         variant: 'destructive',
       });
     }
-  };
+  }, [supabaseUrl, supabaseKey, checkSchemaVersion, toast]);
+
+  useEffect(() => {
+    checkConnection();
+  }, [checkConnection]);
 
   const handleSaveCredentials = () => {
     if (!supabaseUrl || !supabaseKey) {
@@ -239,7 +301,7 @@ export default function DatabaseConfig() {
     checkConnection();
   };
 
-  const checkSchema = async () => {
+  const checkSchema = useCallback(async () => {
     if (!isConnected) return;
 
     setSchemaStatus('checking');
@@ -284,9 +346,9 @@ export default function DatabaseConfig() {
         variant: 'destructive',
       });
     }
-  };
+  }, [isConnected, toast]);
 
-  const updateSchema = async () => {
+  const updateSchema = useCallback(async () => {
     if (!isConnected || missingTables.length === 0) return;
 
     setSchemaStatus('updating');
@@ -306,9 +368,13 @@ export default function DatabaseConfig() {
         setSchemaLog(prev => [...prev, `Tabela "${tableName}" criada com sucesso`]);
       }
       
+      // Atualizar versão do esquema
+      await updateSchemaVersion(SCHEMA_VERSION);
+      
       setSchemaStatus('updated');
       setSchemaLog(prev => [...prev, 'Esquema atualizado com sucesso!']);
       setMissingTables([]);
+      setCurrentSchemaVersion(SCHEMA_VERSION);
       
       toast({
         title: 'Sucesso',
@@ -323,7 +389,14 @@ export default function DatabaseConfig() {
         variant: 'destructive',
       });
     }
-  };
+  }, [isConnected, missingTables, updateSchemaVersion, toast]);
+
+  // Verificação automática de esquema ao carregar
+  useEffect(() => {
+    if (isConnected) {
+      checkSchema();
+    }
+  }, [isConnected, checkSchema]);
 
   return (
     <div className="container mx-auto py-8 space-y-8">
@@ -333,6 +406,54 @@ export default function DatabaseConfig() {
           Configure as credenciais e gerencie o esquema do banco de dados
         </p>
       </div>
+
+      {/* Status do Sistema */}
+      <Card className="p-6">
+        <div className="flex items-center gap-3 mb-6">
+          <ShieldAlert className="w-6 h-6 text-primary" />
+          <h2 className="text-xl font-semibold">Status do Sistema</h2>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="flex items-center gap-3 p-4 bg-muted rounded-lg">
+            {connectionStatus === 'connected' ? (
+              <ShieldCheck className="w-5 h-5 text-success" />
+            ) : (
+              <ShieldAlert className="w-5 h-5 text-warning" />
+            )}
+            <div>
+              <p className="text-sm text-muted-foreground">Conexão</p>
+              <p className="font-semibold">
+                {connectionStatus === 'connected' ? 'Conectado' : 'Desconectado'}
+              </p>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-3 p-4 bg-muted rounded-lg">
+            {schemaStatus === 'updated' ? (
+              <CheckCircle className="w-5 h-5 text-success" />
+            ) : (
+              <AlertCircle className="w-5 h-5 text-warning" />
+            )}
+            <div>
+              <p className="text-sm text-muted-foreground">Esquema</p>
+              <p className="font-semibold">
+                {schemaStatus === 'updated' ? 'Atualizado' : 'Pendente'}
+              </p>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-3 p-4 bg-muted rounded-lg">
+            <Database className="w-5 h-5 text-primary" />
+            <div>
+              <p className="text-sm text-muted-foreground">Versão</p>
+              <p className="font-semibold">
+                {currentSchemaVersion || 'N/A'}
+              </p>
+            </div>
+          </div>
+        </div>
+      </Card>
 
       {/* Configuração de Credenciais */}
       <Card className="p-6">
