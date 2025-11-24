@@ -578,6 +578,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_tenant_for_signup: {
+        Args: { _name: string; _slug: string }
+        Returns: string
+      }
       get_user_tenant_id: { Args: never; Returns: string }
       has_role: {
         Args: {

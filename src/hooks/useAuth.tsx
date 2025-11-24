@@ -116,17 +116,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signUp = async (email: string, password: string, tenantName: string, fullName: string) => {
     try {
-      // First, create the tenant
-      const { data: tenantData, error: tenantError } = await supabase
-        .from('tenants')
-        .insert({
-          name: tenantName,
-          slug: tenantName.toLowerCase().replace(/\s+/g, '-'),
-        })
-        .select()
-        .single();
+      // First, create the tenant using the security definer function
+      const slug = tenantName.toLowerCase().replace(/\s+/g, '-');
+      const { data: tenantId, error: tenantError } = await supabase
+        .rpc('create_tenant_for_signup', {
+          _name: tenantName,
+          _slug: slug,
+        });
 
       if (tenantError) throw tenantError;
+      if (!tenantId) throw new Error('Failed to create tenant');
 
       // Then sign up the user with tenant_id in metadata
       const redirectUrl = `${window.location.origin}/`;
@@ -136,7 +135,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         options: {
           emailRedirectTo: redirectUrl,
           data: {
-            tenant_id: tenantData.id,
+            tenant_id: tenantId,
             full_name: fullName,
           },
         },
@@ -150,7 +149,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           .from('user_roles')
           .insert({
             user_id: authData.user.id,
-            tenant_id: tenantData.id,
+            tenant_id: tenantId,
             role: 'tenant_admin',
           });
 
@@ -163,7 +162,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
         if (modules) {
           const tenantModules = modules.map(m => ({
-            tenant_id: tenantData.id,
+            tenant_id: tenantId,
             module_id: m.id,
             active: true,
           }));
