@@ -18,6 +18,7 @@ import Configuracoes from "./pages/Configuracoes";
 import Produtos from "./pages/Produtos";
 import Relatorios from "./pages/Relatorios";
 import DatabaseConfig from "./pages/DatabaseConfig";
+import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -42,6 +43,7 @@ const App = () => (
             <Route path="/relatorios" element={<ProtectedRoute><Layout><Relatorios /></Layout></ProtectedRoute>} />
             <Route path="/configuracoes" element={<ProtectedRoute><Layout><Configuracoes /></Layout></ProtectedRoute>} />
             <Route path="/database-config" element={<ProtectedRoute><Layout><DatabaseConfig /></Layout></ProtectedRoute>} />
+            <Route path="/admin" element={<ProtectedRoute><Layout><Admin /></Layout></ProtectedRoute>} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

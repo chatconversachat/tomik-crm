@@ -11,7 +11,8 @@ import {
   Package,
   BarChart3,
   FileText,
-  LogOut
+  LogOut,
+  Shield
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useTenantModules } from '@/hooks/useTenantModules';
@@ -44,6 +45,7 @@ const navigationMap: Record<string, { name: string; href: string; icon: any; mod
   produtos: { name: 'Produtos', href: '/produtos', icon: Package, module: 'produtos' },
   agentes: { name: 'Agentes IA', href: '/agentes', icon: Bot, module: 'agentes' },
   relatorios: { name: 'Relatórios', href: '/relatorios', icon: BarChart3, module: 'relatorios' },
+  admin: { name: 'Administração', href: '/admin', icon: Shield },
   configuracoes: { name: 'Configurações', href: '/configuracoes', icon: Settings },
 };
 
@@ -53,7 +55,7 @@ function SidebarContent_({ location }: { location: ReturnType<typeof useLocation
   const { modules, loading } = useTenantModules();
 
   const getAvailableNavigation = () => {
-    if (loading) return [navigationMap.dashboard, navigationMap.configuracoes];
+    if (loading) return [navigationMap.dashboard, navigationMap.admin, navigationMap.configuracoes];
     
     const available = [navigationMap.dashboard];
     
@@ -63,6 +65,7 @@ function SidebarContent_({ location }: { location: ReturnType<typeof useLocation
       }
     });
     
+    available.push(navigationMap.admin);
     available.push(navigationMap.configuracoes);
     return available;
   };
