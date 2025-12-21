@@ -5,6 +5,7 @@ import { DatabaseStatus } from '@/components/database/DatabaseStatus';
 import { CredentialsForm } from '@/components/database/CredentialsForm';
 import { SchemaManager } from '@/components/database/SchemaManager';
 import { SchemaViewer } from '@/components/database/SchemaViewer';
+import { TABLE_DEFINITIONS } from '@/components/database/SchemaDefinitions';
 
 // Versão do esquema para rastreamento de atualizações
 const SCHEMA_VERSION = '1.0.0';
@@ -121,12 +122,10 @@ export default function DatabaseConfig() {
     localStorage.setItem('SUPABASE_KEY', key);
     setSupabaseUrl(url);
     setSupabaseKey(key);
-    
     toast({
       title: 'Credenciais salvas',
       description: 'As credenciais foram salvas com sucesso.',
     });
-    
     checkConnection();
   };
 
@@ -139,21 +138,7 @@ export default function DatabaseConfig() {
     try {
       const missing: string[] = [];
       
-      // Definição do esquema das tabelas
-      const TABLE_DEFINITIONS = {
-        agentes: 'agentes',
-        whatsapp_instances: 'whatsapp_instances',
-        stages: 'stages',
-        leads: 'leads',
-        config_fiscal: 'config_fiscal',
-        contas_pagar: 'contas_pagar',
-        contas_receber: 'contas_receber',
-        fluxo_caixa: 'fluxo_caixa',
-        notas_fiscais: 'notas_fiscais',
-        regras_fiscais: 'regras_fiscais'
-      };
-      
-      for (const tableName of Object.values(TABLE_DEFINITIONS)) {
+      for (const tableName of Object.keys(TABLE_DEFINITIONS)) {
         const { error } = await (supabase as any)
           .from(tableName)
           .select('id')
@@ -198,160 +183,6 @@ export default function DatabaseConfig() {
     setSchemaLog(['Atualizando esquema do banco de dados...']);
     
     try {
-      // Definição do esquema das tabelas
-      const TABLE_DEFINITIONS = {
-        agentes: `
-          CREATE TABLE IF NOT EXISTS agentes (
-            id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-            name TEXT NOT NULL,
-            description TEXT,
-            status TEXT DEFAULT 'Ativo',
-            model TEXT DEFAULT 'gemini-flash',
-            prompt TEXT,
-            n8n_webhook TEXT,
-            n8n_connected BOOLEAN DEFAULT false,
-            audio_enabled BOOLEAN DEFAULT false,
-            image_enabled BOOLEAN DEFAULT false,
-            file_enabled BOOLEAN DEFAULT false,
-            conversations INTEGER DEFAULT 0,
-            resolution NUMERIC(5,2) DEFAULT 0,
-            avg_response NUMERIC(5,2) DEFAULT 0,
-            created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-            updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-          );
-        `,
-        whatsapp_instances: `
-          CREATE TABLE IF NOT EXISTS whatsapp_instances (
-            id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-            name TEXT NOT NULL,
-            phone TEXT,
-            status TEXT DEFAULT 'disconnected',
-            type TEXT DEFAULT 'whatsapp_cloud',
-            qr_code_data TEXT,
-            evolution_api_url TEXT,
-            evolution_api_key TEXT,
-            session_data JSONB,
-            created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-            updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-          );
-        `,
-        stages: `
-          CREATE TABLE IF NOT EXISTS stages (
-            id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-            name TEXT NOT NULL,
-            color TEXT DEFAULT 'bg-gray-100 text-gray-800',
-            "order" INTEGER DEFAULT 0,
-            created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-            updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-          );
-        `,
-        leads: `
-          CREATE TABLE IF NOT EXISTS leads (
-            id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-            name TEXT NOT NULL,
-            email TEXT,
-            phone TEXT,
-            stage_id UUID REFERENCES stages(id),
-            value NUMERIC(10,2),
-            source TEXT,
-            description TEXT,
-            created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-            updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-          );
-        `,
-        config_fiscal: `
-          CREATE TABLE IF NOT EXISTS config_fiscal (
-            id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-            item_id UUID NOT NULL,
-            item_tipo TEXT NOT NULL,
-            cfop TEXT NOT NULL,
-            cst TEXT,
-            ncm TEXT,
-            regras_fiscais_ids UUID[],
-            created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-            updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-          );
-        `,
-        contas_pagar: `
-          CREATE TABLE IF NOT EXISTS contas_pagar (
-            id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-            descricao TEXT NOT NULL,
-            valor NUMERIC(10,2) NOT NULL,
-            data_vencimento DATE NOT NULL,
-            data_pagamento DATE,
-            categoria TEXT,
-            fornecedor TEXT,
-            status TEXT DEFAULT 'pendente',
-            observacoes TEXT,
-            created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-            updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-          );
-        `,
-        contas_receber: `
-          CREATE TABLE IF NOT EXISTS contas_receber (
-            id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-            descricao TEXT NOT NULL,
-            valor NUMERIC(10,2) NOT NULL,
-            data_vencimento DATE NOT NULL,
-            data_recebimento DATE,
-            categoria TEXT,
-            cliente TEXT,
-            status TEXT DEFAULT 'pendente',
-            observacoes TEXT,
-            created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-            updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-          );
-        `,
-        fluxo_caixa: `
-          CREATE TABLE IF NOT EXISTS fluxo_caixa (
-            id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-            data DATE NOT NULL,
-            tipo TEXT NOT NULL, -- entrada/saida
-            categoria TEXT NOT NULL,
-            descricao TEXT NOT NULL,
-            valor NUMERIC(10,2) NOT NULL,
-            origem_id UUID,
-            origem_tipo TEXT,
-            saldo_acumulado NUMERIC(10,2),
-            created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-          );
-        `,
-        notas_fiscais: `
-          CREATE TABLE IF NOT EXISTS notas_fiscais (
-            id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-            tipo TEXT NOT NULL, -- nfse/nfe
-            cliente_nome TEXT NOT NULL,
-            cliente_cpf_cnpj TEXT NOT NULL,
-            valor_total NUMERIC(10,2) NOT NULL,
-            itens JSONB NOT NULL,
-            status TEXT DEFAULT 'pendente',
-            numero TEXT,
-            serie TEXT,
-            chave_acesso TEXT,
-            protocolo_sefaz TEXT,
-            data_emissao TIMESTAMP WITH TIME ZONE,
-            xml_nfe TEXT,
-            mensagem_erro TEXT,
-            impostos JSONB,
-            valor_impostos NUMERIC(10,2),
-            created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-            updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-          );
-        `,
-        regras_fiscais: `
-          CREATE TABLE IF NOT EXISTS regras_fiscais (
-            id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-            nome TEXT NOT NULL,
-            tipo TEXT NOT NULL, -- ISS/ICMS/PIS/COFINS
-            aliquota NUMERIC(5,2) NOT NULL,
-            descricao TEXT,
-            ativo BOOLEAN DEFAULT true,
-            created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-            updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-          );
-        `
-      };
-      
       for (const tableName of missingTables) {
         const definition = TABLE_DEFINITIONS[tableName as keyof typeof TABLE_DEFINITIONS];
         setSchemaLog(prev => [...prev, `Criando tabela "${tableName}"...`]);
@@ -405,12 +236,12 @@ export default function DatabaseConfig() {
       </div>
 
       <DatabaseStatus 
-        connectionStatus={connectionStatus}
-        schemaStatus={schemaStatus}
-        currentSchemaVersion={currentSchemaVersion}
+        connectionStatus={connectionStatus} 
+        schemaStatus={schemaStatus} 
+        currentSchemaVersion={currentSchemaVersion} 
       />
 
-      <CredentialsForm
+      <CredentialsForm 
         initialUrl={supabaseUrl}
         initialKey={supabaseKey}
         connectionStatus={connectionStatus}
@@ -418,7 +249,7 @@ export default function DatabaseConfig() {
         onCheckConnection={checkConnection}
       />
 
-      <SchemaManager
+      <SchemaManager 
         isConnected={isConnected}
         schemaStatus={schemaStatus}
         missingTables={missingTables}

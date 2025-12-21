@@ -14,13 +14,7 @@ interface CredentialsFormProps {
   onCheckConnection: () => void;
 }
 
-export function CredentialsForm({ 
-  initialUrl, 
-  initialKey, 
-  connectionStatus, 
-  onSave, 
-  onCheckConnection 
-}: CredentialsFormProps) {
+export function CredentialsForm({ initialUrl, initialKey, connectionStatus, onSave, onCheckConnection }: CredentialsFormProps) {
   const [supabaseUrl, setSupabaseUrl] = useState(initialUrl);
   const [supabaseKey, setSupabaseKey] = useState(initialKey);
   const { toast } = useToast();
@@ -34,7 +28,6 @@ export function CredentialsForm({
       });
       return;
     }
-
     onSave(supabaseUrl, supabaseKey);
   };
 

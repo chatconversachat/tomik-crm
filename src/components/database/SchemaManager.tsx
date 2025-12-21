@@ -12,14 +12,7 @@ interface SchemaManagerProps {
   onUpdateSchema: () => void;
 }
 
-export function SchemaManager({ 
-  isConnected, 
-  schemaStatus, 
-  missingTables, 
-  schemaLog,
-  onCheckSchema,
-  onUpdateSchema
-}: SchemaManagerProps) {
+export function SchemaManager({ isConnected, schemaStatus, missingTables, schemaLog, onCheckSchema, onUpdateSchema }: SchemaManagerProps) {
   return (
     <Card className="p-6">
       <div className="flex items-center gap-3 mb-6">

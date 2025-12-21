@@ -1,11 +1,5 @@
 import { Card } from '@/components/ui/card';
-import { 
-  Database, 
-  ShieldAlert, 
-  ShieldCheck, 
-  CheckCircle, 
-  AlertCircle 
-} from 'lucide-react';
+import { Database, ShieldAlert, ShieldCheck, CheckCircle, AlertCircle } from 'lucide-react';
 
 interface DatabaseStatusProps {
   connectionStatus: 'idle' | 'connecting' | 'connected' | 'error';
@@ -13,11 +7,7 @@ interface DatabaseStatusProps {
   currentSchemaVersion: string | null;
 }
 
-export function DatabaseStatus({ 
-  connectionStatus, 
-  schemaStatus, 
-  currentSchemaVersion 
-}: DatabaseStatusProps) {
+export function DatabaseStatus({ connectionStatus, schemaStatus, currentSchemaVersion }: DatabaseStatusProps) {
   return (
     <Card className="p-6">
       <div className="flex items-center gap-3 mb-6">
