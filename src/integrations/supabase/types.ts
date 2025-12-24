@@ -14,63 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      agentes: { // NEW TABLE FOR AGENTS
-        Row: {
-          id: string;
-          name: string;
-          description: string;
-          status: string;
-          model: string;
-          prompt: string;
-          n8n_webhook: string | null;
-          n8n_connected: boolean;
-          audio_enabled: boolean;
-          image_enabled: boolean;
-          file_enabled: boolean;
-          conversations: number;
-          resolution: number;
-          avg_response: number;
-          created_at: string;
-          updated_at: string;
-        };
-        Insert: {
-          id?: string;
-          name: string;
-          description: string;
-          status?: string;
-          model?: string;
-          prompt?: string;
-          n8n_webhook?: string | null;
-          n8n_connected?: boolean;
-          audio_enabled?: boolean;
-          image_enabled?: boolean;
-          file_enabled?: boolean;
-          conversations?: number;
-          resolution?: number;
-          avg_response?: number;
-          created_at?: string;
-          updated_at?: string;
-        };
-        Update: {
-          id?: string;
-          name?: string;
-          description?: string;
-          status?: string;
-          model?: string;
-          prompt?: string;
-          n8n_webhook?: string | null;
-          n8n_connected?: boolean;
-          audio_enabled?: boolean;
-          image_enabled?: boolean;
-          file_enabled?: boolean;
-          conversations?: number;
-          resolution?: number;
-          avg_response?: number;
-          created_at?: string;
-          updated_at?: string;
-        };
-        Relationships: [];
-      };
       config_fiscal: {
         Row: {
           cfop: string
@@ -81,6 +24,7 @@ export type Database = {
           item_tipo: string
           ncm: string | null
           regras_fiscais_ids: string[] | null
+          tenant_id: string | null
           updated_at: string
         }
         Insert: {
@@ -92,6 +36,7 @@ export type Database = {
           item_tipo: string
           ncm?: string | null
           regras_fiscais_ids?: string[] | null
+          tenant_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -103,9 +48,18 @@ export type Database = {
           item_tipo?: string
           ncm?: string | null
           regras_fiscais_ids?: string[] | null
+          tenant_id?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "config_fiscal_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       contas_pagar: {
         Row: {
@@ -118,6 +72,7 @@ export type Database = {
           id: string
           observacoes: string | null
           status: string
+          tenant_id: string | null
           updated_at: string
           valor: number
         }
@@ -131,6 +86,7 @@ export type Database = {
           id?: string
           observacoes?: string | null
           status?: string
+          tenant_id?: string | null
           updated_at?: string
           valor: number
         }
@@ -144,10 +100,19 @@ export type Database = {
           id?: string
           observacoes?: string | null
           status?: string
+          tenant_id?: string | null
           updated_at?: string
           valor?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "contas_pagar_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       contas_receber: {
         Row: {
@@ -160,6 +125,7 @@ export type Database = {
           id: string
           observacoes: string | null
           status: string
+          tenant_id: string | null
           updated_at: string
           valor: number
         }
@@ -173,6 +139,7 @@ export type Database = {
           id?: string
           observacoes?: string | null
           status?: string
+          tenant_id?: string | null
           updated_at?: string
           valor: number
         }
@@ -186,10 +153,19 @@ export type Database = {
           id?: string
           observacoes?: string | null
           status?: string
+          tenant_id?: string | null
           updated_at?: string
           valor?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "contas_receber_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       fluxo_caixa: {
         Row: {
@@ -201,6 +177,7 @@ export type Database = {
           origem_id: string | null
           origem_tipo: string | null
           saldo_acumulado: number | null
+          tenant_id: string | null
           tipo: string
           valor: number
         }
@@ -213,6 +190,7 @@ export type Database = {
           origem_id?: string | null
           origem_tipo?: string | null
           saldo_acumulado?: number | null
+          tenant_id?: string | null
           tipo: string
           valor: number
         }
@@ -225,58 +203,53 @@ export type Database = {
           origem_id?: string | null
           origem_tipo?: string | null
           saldo_acumulado?: number | null
+          tenant_id?: string | null
           tipo?: string
           valor?: number
         }
-        Relationships: []
-      }
-      leads: { // NEW TABLE FOR CRM LEADS
-        Row: {
-          id: string;
-          name: string;
-          email: string | null;
-          phone: string | null;
-          stage_id: string;
-          value: number | null;
-          source: string | null;
-          description: string | null;
-          created_at: string;
-          updated_at: string;
-        };
-        Insert: {
-          id?: string;
-          name: string;
-          email?: string | null;
-          phone?: string | null;
-          stage_id: string;
-          value?: number | null;
-          source?: string | null;
-          description?: string | null;
-          created_at?: string;
-          updated_at?: string;
-        };
-        Update: {
-          id?: string;
-          name?: string;
-          email?: string | null;
-          phone?: string | null;
-          stage_id?: string;
-          value?: number | null;
-          source?: string | null;
-          description?: string | null;
-          created_at?: string;
-          updated_at?: string;
-        };
         Relationships: [
           {
-            foreignKeyName: "leads_stage_id_fkey";
-            columns: ["stage_id"];
-            isOneToOne: false;
-            referencedRelation: "stages";
-            referencedColumns: ["id"];
+            foreignKeyName: "fluxo_caixa_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
           },
-        ];
-      };
+        ]
+      }
+      modules: {
+        Row: {
+          active: boolean
+          created_at: string
+          description: string | null
+          display_name: string
+          icon: string | null
+          id: string
+          name: string
+          route: string | null
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          display_name: string
+          icon?: string | null
+          id?: string
+          name: string
+          route?: string | null
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          display_name?: string
+          icon?: string | null
+          id?: string
+          name?: string
+          route?: string | null
+        }
+        Relationships: []
+      }
       notas_fiscais: {
         Row: {
           chave_acesso: string | null
@@ -292,6 +265,7 @@ export type Database = {
           protocolo_sefaz: string | null
           serie: string | null
           status: string
+          tenant_id: string | null
           tipo: string
           updated_at: string
           valor_impostos: number | null
@@ -312,6 +286,7 @@ export type Database = {
           protocolo_sefaz?: string | null
           serie?: string | null
           status?: string
+          tenant_id?: string | null
           tipo: string
           updated_at?: string
           valor_impostos?: number | null
@@ -332,13 +307,123 @@ export type Database = {
           protocolo_sefaz?: string | null
           serie?: string | null
           status?: string
+          tenant_id?: string | null
           tipo?: string
           updated_at?: string
           valor_impostos?: number | null
           valor_total?: number
           xml_nfe?: string | null
         }
+        Relationships: [
+          {
+            foreignKeyName: "notas_fiscais_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      plan_modules: {
+        Row: {
+          id: string
+          module_id: string
+          plan_id: string
+        }
+        Insert: {
+          id?: string
+          module_id: string
+          plan_id: string
+        }
+        Update: {
+          id?: string
+          module_id?: string
+          plan_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plan_modules_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "modules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plan_modules_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      plans: {
+        Row: {
+          active: boolean
+          created_at: string
+          description: string | null
+          display_name: string
+          id: string
+          name: string
+          price_monthly: number
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          display_name: string
+          id?: string
+          name: string
+          price_monthly: number
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          display_name?: string
+          id?: string
+          name?: string
+          price_monthly?: number
+        }
         Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          email: string
+          full_name: string | null
+          id: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          email: string
+          full_name?: string | null
+          id: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          email?: string
+          full_name?: string | null
+          id?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       regras_fiscais: {
         Row: {
@@ -348,6 +433,7 @@ export type Database = {
           descricao: string | null
           id: string
           nome: string
+          tenant_id: string | null
           tipo: string
           updated_at: string
         }
@@ -358,6 +444,7 @@ export type Database = {
           descricao?: string | null
           id?: string
           nome: string
+          tenant_id?: string | null
           tipo: string
           updated_at?: string
         }
@@ -368,89 +455,148 @@ export type Database = {
           descricao?: string | null
           id?: string
           nome?: string
+          tenant_id?: string | null
           tipo?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "regras_fiscais_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tenant_modules: {
+        Row: {
+          activated_at: string
+          active: boolean
+          expires_at: string | null
+          id: string
+          module_id: string
+          tenant_id: string
+        }
+        Insert: {
+          activated_at?: string
+          active?: boolean
+          expires_at?: string | null
+          id?: string
+          module_id: string
+          tenant_id: string
+        }
+        Update: {
+          activated_at?: string
+          active?: boolean
+          expires_at?: string | null
+          id?: string
+          module_id?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_modules_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "modules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tenant_modules_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tenants: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          settings: Json | null
+          slug: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          settings?: Json | null
+          slug: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          settings?: Json | null
+          slug?: string
+          status?: string
           updated_at?: string
         }
         Relationships: []
       }
-      stages: { // NEW TABLE FOR CRM STAGES
+      user_roles: {
         Row: {
-          id: string;
-          name: string;
-          color: string;
-          order: number;
-          created_at: string;
-          updated_at: string;
-        };
-        Insert: {
-          id?: string;
-          name: string;
-          color: string;
-          order?: number;
-          created_at?: string;
-          updated_at?: string;
-        };
-        Update: {
-          id?: string;
-          name?: string;
-          color?: string;
-          order?: number;
-          created_at?: string;
-          updated_at?: string;
-        };
-        Relationships: [];
-      };
-      whatsapp_instances: { // UPDATED TABLE FOR EVOLUTION API
-        Row: {
-          id: string
-          name: string
-          phone: string
-          status: string
-          type: string; // 'evolution_api' | 'whatsapp_cloud'
-          qr_code_data: string | null; // Base64 image or URL
-          evolution_api_url: string | null;
-          evolution_api_key: string | null;
-          session_data: Json | null;
           created_at: string
-          updated_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          tenant_id: string
+          user_id: string
         }
         Insert: {
-          id?: string
-          name: string
-          phone: string
-          status?: string
-          type?: string;
-          qr_code_data?: string | null;
-          evolution_api_url?: string | null;
-          evolution_api_key?: string | null;
-          session_data?: Json | null;
           created_at?: string
-          updated_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          tenant_id: string
+          user_id: string
         }
         Update: {
-          id?: string
-          name?: string
-          phone?: string
-          status?: string
-          type?: string;
-          qr_code_data?: string | null;
-          evolution_api_url?: string | null;
-          evolution_api_key?: string | null;
-          session_data?: Json | null;
           created_at?: string
-          updated_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          tenant_id?: string
+          user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "user_roles_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      create_tenant_for_signup: {
+        Args: { _name: string; _slug: string }
+        Returns: string
+      }
+      get_user_tenant_id: { Args: never; Returns: string }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      tenant_has_module: {
+        Args: { _module_name: string; _tenant_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "tenant_admin" | "tenant_user"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -577,6 +723,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["tenant_admin", "tenant_user"],
+    },
   },
 } as const
