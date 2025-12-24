@@ -26,6 +26,7 @@ import {
 import { toast } from '@/hooks/use-toast';
 import { WhatsAppInstanceDialog } from '@/components/dialogs/WhatsAppInstanceDialog';
 import { supabase } from '@/integrations/supabase/client';
+import { CreateTestNotification } from '@/components/notifications/CreateTestNotification';
 
 export default function Configuracoes() {
   const [orgName, setOrgName] = useState('Tomik CRM');
@@ -523,6 +524,8 @@ export default function Configuracoes() {
 
         {/* Notificações */}
         <TabsContent value="notifications" className="space-y-4">
+          <CreateTestNotification />
+          
           <Card className="p-6">
             <h2 className="text-xl font-bold text-foreground mb-4">Preferências de Notificação</h2>
             <div className="space-y-6">
@@ -574,10 +577,20 @@ export default function Configuracoes() {
                 <div>
                   <Label htmlFor="notif-finance">Movimentações Financeiras</Label>
                   <p className="text-sm text-muted-foreground">
-                    Notificar sobre novas transações
+                    Notificar sobre novas transações e vencimentos
                   </p>
                 </div>
-                <Switch id="notif-finance" />
+                <Switch id="notif-finance" defaultChecked />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label htmlFor="notif-approvals">Aprovações Pendentes</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Notificar sobre itens que precisam de aprovação
+                  </p>
+                </div>
+                <Switch id="notif-approvals" defaultChecked />
               </div>
 
               <Button onClick={handleSave} className="w-full">

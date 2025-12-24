@@ -324,6 +324,77 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          action_label: string | null
+          action_url: string | null
+          category: string
+          created_at: string
+          expires_at: string | null
+          id: string
+          message: string
+          metadata: Json | null
+          priority: string
+          read_at: string | null
+          related_entity_id: string | null
+          related_entity_type: string | null
+          status: string
+          tenant_id: string | null
+          title: string
+          type: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          action_label?: string | null
+          action_url?: string | null
+          category?: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          message: string
+          metadata?: Json | null
+          priority?: string
+          read_at?: string | null
+          related_entity_id?: string | null
+          related_entity_type?: string | null
+          status?: string
+          tenant_id?: string | null
+          title: string
+          type?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          action_label?: string | null
+          action_url?: string | null
+          category?: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          message?: string
+          metadata?: Json | null
+          priority?: string
+          read_at?: string | null
+          related_entity_id?: string | null
+          related_entity_type?: string | null
+          status?: string
+          tenant_id?: string | null
+          title?: string
+          type?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       plan_modules: {
         Row: {
           id: string
@@ -578,6 +649,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_financial_due_dates: { Args: never; Returns: undefined }
       create_tenant_for_signup: {
         Args: { _name: string; _slug: string }
         Returns: string

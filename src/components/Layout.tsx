@@ -1,5 +1,5 @@
 import { ReactNode } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, Link } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   Users, 
@@ -24,7 +24,7 @@ import {
   SidebarHeader,
   useSidebar,
 } from '@/components/ui/sidebar';
-import { Link } from 'react-router-dom';
+import { NotificationCenter } from '@/components/notifications/NotificationCenter';
 
 interface LayoutProps {
   children: ReactNode;
@@ -62,13 +62,18 @@ function SidebarContent_({ location }: { location: ReturnType<typeof useLocation
       onMouseLeave={handleMouseLeave}
     >
       <SidebarHeader className="border-b border-sidebar-border">
-        <div className="flex items-center justify-center h-16 px-4">
-          <h1 className="text-xl font-bold text-white group-data-[collapsible=icon]:hidden">
-            Tomik CRM
-          </h1>
-          <h1 className="text-xl font-bold text-white hidden group-data-[collapsible=icon]:block">
-            TC
-          </h1>
+        <div className="flex items-center justify-between h-16 px-4">
+          <div className="flex items-center">
+            <h1 className="text-xl font-bold text-white group-data-[collapsible=icon]:hidden">
+              Tomik ERP
+            </h1>
+            <h1 className="text-xl font-bold text-white hidden group-data-[collapsible=icon]:block">
+              TE
+            </h1>
+          </div>
+          <div className="group-data-[collapsible=icon]:hidden">
+            <NotificationCenter />
+          </div>
         </div>
       </SidebarHeader>
       
